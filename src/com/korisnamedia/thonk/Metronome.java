@@ -63,6 +63,8 @@ public class Metronome {
     }
 
     public void stop() {
-        metronomeTimer.cancel();
+        if(metronomeTimer != null) {
+            metronomeTimer.cancel();
+        }
     }
 }

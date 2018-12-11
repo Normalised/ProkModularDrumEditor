@@ -66,7 +66,8 @@ public class UIControls implements ControlListener, ModelUIBuilder {
                 .setCaptionLabel("");
 
         noteNumberInput.setAutoClear(false);
-        noteNumberInput.setInputFilter(ControlP5Constants.INTEGER);
+        //noteNumberInput.setInputFilter(ControlP5Constants.INTEGER);
+
         //noteNumberInput.onEnter(theEvent -> setNote());
     }
 
@@ -78,15 +79,39 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     private void setNote() {
         cp5.println("Set Note " + lastParamID + " : " + tunableControls.containsKey(lastParamID));
-        if(lastParamID != -1 && tunableControls.containsKey(lastParamID)) {
-            try {
-                Integer noteNumber = Integer.parseInt(noteNumberInput.getText());
-                Slider s = tunableControls.get(lastParamID);
-                float frequency = (float) noteMapper.getFrequency(noteNumber);
-                cp5.println("Setting slider " + lastParamID + " to note number " + noteNumber + " with freq " + frequency);
-                s.setValue(frequency);
-            } catch(Exception e) {
-                e.printStackTrace();
+
+        if(noteNumberInput.getText().contains(",")) {
+            // assume list
+            String[] notes = noteNumberInput.getText().split(",");
+            cp5.println("Setting multiple notes : " + notes.length);
+            int controlIndex = 0;
+            Object[] controls = tunableControls.values().toArray();
+            for(String noteText : notes) {
+                noteText = noteText.trim();
+                if(noteText.equalsIgnoreCase("-")) {
+                    controlIndex++;
+                    continue;
+                } else {
+                    Integer noteNumber = Integer.parseInt(noteText);
+                    float frequency = (float) noteMapper.getFrequency(noteNumber);
+                    if(controlIndex < controls.length) {
+                        ((Slider) controls[controlIndex]).setValue(frequency);
+                    }
+                    controlIndex++;
+                }
+            }
+        } else {
+
+            if (lastParamID != -1 && tunableControls.containsKey(lastParamID)) {
+                try {
+                    Integer noteNumber = Integer.parseInt(noteNumberInput.getText());
+                    Slider s = tunableControls.get(lastParamID);
+                    float frequency = (float) noteMapper.getFrequency(noteNumber);
+                    cp5.println("Setting slider " + lastParamID + " to note number " + noteNumber + " with freq " + frequency);
+                    s.setValue(frequency);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

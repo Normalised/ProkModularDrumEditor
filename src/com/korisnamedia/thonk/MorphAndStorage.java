@@ -38,7 +38,7 @@ public class MorphAndStorage implements SerialCommunicatorListener {
         blockWidth = 108;
 
         println("Create MorphAndStorage");
-        quads = new ArrayList<QuadUI>();
+        quads = new ArrayList<>();
 
         app.serialCommunicator.addSerialCommsListener(this);
     }

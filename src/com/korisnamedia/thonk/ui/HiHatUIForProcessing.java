@@ -1,4 +1,4 @@
-package com.korisnamedia.thonk.models;
+package com.korisnamedia.thonk.ui;
 
 import com.prokmodular.ui.ModelUIBuilder;
 import com.prokmodular.model.ModelConfig;
@@ -15,14 +15,14 @@ import static com.prokmodular.model.ParameterMapping.createLinear;
 import static com.prokmodular.model.ParameterMapping.createSquared;
 import static com.korisnamedia.thonk.ui.Layout.leftMargin;
 
-public class HiHatModel implements ProkModel, ModelUI {
+public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
 
     private final ArrayList<Slider> freqSliders;
     private final ArrayList<Slider> gainSliders;
 
     private List<Float> frequencyBuffer;
 
-    public HiHatModel() {
+    public HiHatUIForProcessing() {
         freqSliders = new ArrayList<>();
         gainSliders = new ArrayList<>();
 
@@ -80,17 +80,6 @@ public class HiHatModel implements ProkModel, ModelUI {
 
         gainSliders.get(4).setValue(0f);
         gainSliders.get(5).setValue(0f);
-    }
-
-    @Override
-    public ModelConfig getConfig() {
-        ModelConfig config = new ModelConfig();
-
-        config.filename = "hihat";
-        config.hello = "hihat";
-        config.version = 5;
-
-        return config;
     }
 
     @Override

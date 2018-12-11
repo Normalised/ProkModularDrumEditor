@@ -1,11 +1,10 @@
 package com.korisnamedia.thonk;
 
+import com.korisnamedia.thonk.ui.HiHatUIForProcessing;
+import com.korisnamedia.thonk.ui.UIForProcessing;
 import com.prokmodular.comms.Serial;
-import com.prokmodular.drums.ClapModel;
-import com.prokmodular.drums.KickModel;
-import com.prokmodular.drums.SnareModel;
+import com.prokmodular.drums.*;
 import com.prokmodular.files.ModelExporter;
-import com.korisnamedia.thonk.models.*;
 import com.korisnamedia.thonk.ui.UIControls;
 import com.prokmodular.comms.Commands;
 import com.prokmodular.model.*;
@@ -38,31 +37,35 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     private PresetManagerView presetManagerView;
 
     private ModelExporter modelExporter;
+
     private ProkModel currentModel;
+    private ModelUI currentUI;
 
     ArrayList<ParameterMapping> parameters;
-
     private PImage logoTiny;
-    private PImage logoBig;
 
+    private PImage logoBig;
     private Map<String, ProkModel> models;
+
+    private Map<String, ModelUI> uis;
+
     private File prokDir;
 
     public UIControls ui;
-
     public static int width = 1450;
     public static int height = 800;
 
     public void settings() {
 
         models = new HashMap<>();
+        uis = new HashMap<>();
 
         parameters = new ArrayList<>();
 
-        addModel(new SnareModel());
-        addModel(new ClapModel());
-        addModel(new KickModel());
-        addModel(new HiHatModel());
+        addModel(new SnareModel(), new SnareUI());
+        addModel(new ClapModel(), new ClapUI());
+        addModel(new KickModel(), new KickUI());
+        addModel(new HiHatModel(), new HiHatUIForProcessing());
 
         size(width, height);
         moduleState = new HashMap<>();
@@ -77,8 +80,9 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
 
     }
 
-    private void addModel(ProkModel model) {
+    private void addModel(ProkModel model, ModelUI ui) {
         models.put(model.getConfig().getName(), model);
+        uis.put(model.getConfig().getName(), ui);
     }
 
     public void keyPressed() {
@@ -115,6 +119,7 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
         }
 
         currentModel = models.get(helloType);
+        currentUI = uis.get(helloType);
         createUIForModel();
 
         if(presetManagerView == null) {
@@ -134,16 +139,29 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     }
 
     private void createUIForModel() {
-        ((ModelUI) currentModel).createUI(ui);
+        currentUI.createUI(ui);
+        if(currentUI instanceof UIForProcessing) {
+            ((UIForProcessing) currentUI).createExtraUI(cp5);
+        }
     }
 
     public void onData(String paramName, String paramValue) {
         if (paramName.equalsIgnoreCase(Commands.VERSION)) {
-            currentModel.getConfig().version = parseInt(paramValue);
+
+            setModelVersion(paramValue);
+
         } else if(paramName.equalsIgnoreCase(Commands.FIRMWARE_VERSION)) {
             println("Firmware Version " + paramValue);
         } else if(paramName.equalsIgnoreCase(Commands.HAS_SD_CARD)) {
             println("Has SD Card " + paramValue);
+        }
+    }
+
+    private void setModelVersion(String paramValue) {
+        if(currentModel != null) {
+            currentModel.getConfig().version = parseInt(paramValue);
+        } else {
+            println("CURRENT MODEL IS NULL");
         }
     }
 

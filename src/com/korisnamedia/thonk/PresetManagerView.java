@@ -83,6 +83,7 @@ public class PresetManagerView {
     private void savePreset(File f) {
         println("Replacing existing preset " + f.getAbsolutePath());
         presetManager.savePreset(app.getPreset(), f);
+        listFiles();
     }
 
     private void savePreset() {
@@ -90,6 +91,7 @@ public class PresetManagerView {
         if(presetNameInput.getText().length() > 0) {
             presetManager.savePreset(app.getPreset(), new File(app.getModelDirectory(), presetNameInput.getText() + ".prk"));
         }
+        listFiles();
     }
 
     private void loadPreset(File presetFile) {
