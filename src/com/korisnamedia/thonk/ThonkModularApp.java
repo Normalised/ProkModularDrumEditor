@@ -54,6 +54,13 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     public UIControls ui;
     public static int width = 1450;
     public static int height = 800;
+    private String unknownModelName = "";
+
+    private enum SerialStatus {
+        STATUS_WAITING, STATUS_UNKNOWN_MODEL, STATUS_FIRMWARE_MISMATCH, OK
+    }
+
+    private SerialStatus serialStatus = SerialStatus.STATUS_WAITING;
 
     public void settings() {
 
@@ -71,6 +78,7 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
         moduleState = new HashMap<>();
         moduleState.put("cpu", "0");
         moduleState.put("audiomem", "0");
+        moduleState.put("blocks","0");
         moduleState.put("version", "0");
         moduleState.put("name", "");
         serialCommunicator = new SerialCommunicator(moduleState);
@@ -105,11 +113,23 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
         cp5.setColor(ControlP5Constants.THEME_RETRO);
         ui = new UIControls(this, cp5);
 
-        serialCommunicator.init();
+        serialCommunicator.init(true);
     }
 
     public void serialConnected(String helloType) {
         println("Serial Connected " + helloType);
+
+        if(helloType.contains("_")) {
+            helloType = helloType.substring(0,helloType.indexOf("_"));
+        }
+        if(!models.containsKey(helloType)) {
+            serialStatus = SerialStatus.STATUS_UNKNOWN_MODEL;
+            unknownModelName = helloType;
+            return;
+        } else {
+            serialStatus = SerialStatus.OK;
+        }
+
         ui.create();
 
         // Create the appropriate UI
@@ -139,7 +159,7 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     }
 
     private void createUIForModel() {
-        currentUI.createUI(ui);
+        currentUI.createUI(ui, currentModel.getConfig().version);
         if(currentUI instanceof UIForProcessing) {
             ((UIForProcessing) currentUI).createExtraUI(cp5);
         }
@@ -177,7 +197,7 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
 
         drawLogo();
 
-        if (serialCommunicator.connected) {
+        if (serialStatus == SerialStatus.OK && serialCommunicator.connected) {
             controlPanel.showStatus(serialCommunicator.connected, moduleState);
             stroke(0xFF777777);
             line(0, height - 30, width, height - 30);
@@ -189,12 +209,16 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     private void showSerialStatus() {
         getGraphics().fill(ControlP5Constants.WHITE);
 
-        int portCount = Serial.list().length;
-        getGraphics().text("Waiting Connection, found " + portCount + " port" + ((portCount != 1) ? "s" : ""), (getWidth() / 2) - 70, getHeight() - 20);
+        if(serialStatus == SerialStatus.STATUS_WAITING) {
+            int portCount = Serial.list().length;
+            getGraphics().text("Waiting Connection, found " + portCount + " port" + ((portCount != 1) ? "s" : ""), (getWidth() / 2) - 70, getHeight() - 20);
+        } else if(serialStatus == SerialStatus.STATUS_UNKNOWN_MODEL) {
+            getGraphics().text("Connection found but model not recognised : " + unknownModelName, (getWidth() / 2) - 70, getHeight() - 20);
+        }
     }
 
     private void drawLogo() {
-        if(serialCommunicator.connected) {
+        if((serialStatus == SerialStatus.OK) && serialCommunicator.connected) {
             // 584, 262
             image(logoTiny, (width / 2) - 29, height - 26, 50, 21);
         } else {

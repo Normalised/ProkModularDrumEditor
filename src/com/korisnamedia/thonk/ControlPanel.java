@@ -21,6 +21,7 @@ public class ControlPanel {
     private MorphAndStorage morphAndStorage;
 
     private HashMap<String, String> nameMap;
+    private boolean devMode = false;
 
     public ControlPanel(PGraphics graphics, ControlP5 cp5, ThonkModularApp thonkModularApp) {
         this.cp5 = cp5;
@@ -54,13 +55,20 @@ public class ControlPanel {
     }
 
     private void addTools() {
-        cp5.addButton("Generate Header").setPosition(10,10).setSize(95,20).onRelease(theEvent -> {
-            app.generateHeader();
-        });
+        if(devMode) {
+            cp5.addButton("Generate Header").setPosition(10,10).setSize(95,20).onRelease(theEvent -> {
+                app.generateHeader();
+            });
 
-        cp5.addButton("Dump All").setPosition(115,10).setSize(95,20).onRelease(theEvent -> {
-            app.saveModelsLocally();
-        });
+            cp5.addButton("Save Bank").setPosition(115,10).setSize(95,20).onRelease(theEvent -> {
+                app.saveModelsLocally();
+            });
+        } else {
+            cp5.addButton("Save Bank").setPosition(65,10).setSize(95,20).onRelease(theEvent -> {
+                app.saveModelsLocally();
+            });
+
+        }
     }
 
     private void addMetronome() {
@@ -82,7 +90,7 @@ public class ControlPanel {
 
         showConnected(connected);
 
-        int x = app.width - 350;
+        int x = app.width - 400;
         int y = app.height - 24;
 
         showNameAndVersion(nameMap.get(moduleState.get("name")),
@@ -90,7 +98,13 @@ public class ControlPanel {
                 moduleState.get(Commands.FIRMWARE_VERSION), x - 40, y);
         showSD(moduleState.get(Commands.HAS_SD_CARD).equalsIgnoreCase("1"), x + 30, y);
         showMemory("MEM " + moduleState.get(Commands.AUDIO_MEMORY), x + 80, y);
-        showCPU(moduleState.get(Commands.CPU),x + 160, y);
+        showBlocks(moduleState.get(Commands.BLOCK_SIZE), x + 140, y + 15);
+        showCPU(moduleState.get(Commands.CPU),x + 210, y);
+    }
+
+    private void showBlocks(String blocks, int x, int y) {
+        graphics.fill(ControlP5Constants.WHITE);
+        graphics.text("Blocks " + blocks, x, y);
     }
 
     private void showSD(boolean hasSD, int x, int y) {

@@ -94,15 +94,15 @@ public class MorphAndStorage implements SerialCommunicatorListener {
                         clearQuad(index);
                     });
 
-            cp5.addButton("Save"+i)
-                    .setValue(0)
-                    .setSize(40, 20)
-                    .setLabel("Save")
-                    .setPosition(quadX + blockWidth + 4, quadY + 16)
-                    .setColorBackground(0xFF009900)
-                    .onClick((CallbackEvent theEvent) -> {
-                        saveQuad(index);
-                    });
+//            cp5.addButton("Save"+i)
+//                    .setValue(0)
+//                    .setSize(40, 20)
+//                    .setLabel("Save")
+//                    .setPosition(quadX + blockWidth + 4, quadY + 16)
+//                    .setColorBackground(0xFF009900)
+//                    .onClick((CallbackEvent theEvent) -> {
+//                        saveQuad(index);
+//                    });
             quadY += blockHeight + 4;
             quads.add(quadUI);
         }

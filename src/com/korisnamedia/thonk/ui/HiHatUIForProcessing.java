@@ -83,17 +83,17 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
     }
 
     @Override
-    public void createUI(ModelUIBuilder ui) {
+    public void createUI(ModelUIBuilder ui, int version) {
 
         //ui.addKnob("Base Freq", 0, 1000);
         ui.addSlider("Base Freq", 0, 1000);
 
-        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 1", 50, 3000));
-        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 2", 50, 3000));
-        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 3", 50, 3000));
-        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 4", 50, 3000));
-        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 5", 50, 3000));
-        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 6", 50, 3000));
+        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 1", 30, 5000));
+        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 2", 30, 5000));
+        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 3", 30, 5000));
+        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 4", 30, 5000));
+        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 5", 30, 5000));
+        freqSliders.add((Slider) ui.addTunableSlider("Square Freq 6", 30, 5000));
 
         ui.addSpace();
 
@@ -133,16 +133,29 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
         // 3 envelopes
         ui.addSlider("Decay Low", createSquared(0, 100, 1, 16000));
         ui.addSlider("Low Extend", createLinear(0, 100, 0, 32000));
+        if(version > 5) {
+            ui.addIntSlider("Low Extend Factor", 1,64);
+        }
         ui.addSlider("Decay Mid", createSquared(0, 100, 1, 16000));
         ui.addSlider("Mid Extend", createLinear(0, 100, 0, 32000));
+        if(version > 5) {
+            ui.addIntSlider("Mid Extend Factor", 1,64);
+        }
+
         ui.addSlider("Decay High", createSquared(0, 100, 1, 16000));
         ui.addSlider("High Extend", createLinear(0, 100, 0, 32000));
+        if(version > 5) {
+            ui.addIntSlider("High Extend Factor", 1,64);
+        }
 
         ui.addSpace();
 
         ui.addSlider("Noise Attack", createSquared(0, 100, 0, 32000));
         ui.addSlider("Decay Noise", createSquared(0, 100, 1, 8000));
         ui.addSlider("Noise Extend", createLinear(0, 100, 0, 32000));
+        if(version > 5) {
+            ui.addIntSlider("Noise Extend Factor", 1,64);
+        }
 
         ui.nextColumn();
 

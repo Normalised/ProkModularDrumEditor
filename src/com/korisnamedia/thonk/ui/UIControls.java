@@ -266,30 +266,30 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     }
 
     public void addSineWithEnvelope(String name) {
-        addSineWithEnvelope(name, 44100);
+        addSineWithEnvelope(name, 32700);
     }
 
     public void addTriModWithEnvelope(String name) {
-        addTriModWithEnvelope(name, 44100);
+        addTriModWithEnvelope(name, 32700);
     }
 
     public void addSineWithEnvelope(String name, int decay) {
-        addTunableSlider(name + " Base Freq", createNone(30, 2000));
+        addTunableSlider(name + " Base Freq", createNone(30, 5000));
         addSlider(name + " Freq Attack", createSquared(0, 100, 0, 32000));
         addSlider(name + " Freq Decay", createSquared(1, 100, 1, decay));
         addSlider(name + " Freq Amount", createSquared(0, 100, 0, 10000));
         addSlider(name + " Freq Extend Level", extendLevelMapping());
-        addIntSlider(name + " Freq Extend Factor", createNone(1, 16));
+        addIntSlider(name + " Freq Extend Factor", createNone(1, 64));
     }
 
     public void addTriModWithEnvelope(String name, int decay) {
-        addTunableSlider(name + " Base Freq", createNone(30, 2000));
+        addTunableSlider(name + " Base Freq", createNone(30, 5000));
         addSlider(name + " Pulse Width", createLinear(0, 100, 0, 1));
-        addSlider(name + " Freq Attack", createSquared(0, 100, 0, 16000));
+        addSlider(name + " Freq Attack", createSquared(0, 100, 0, 32000));
         addSlider(name + " Freq Decay", createSquared(1, 100, 1, decay));
         addSlider(name + " Freq Amount", createSquared(0, 100, 0, 10000));
         addSlider(name + " Freq Extend Level", extendLevelMapping());
-        addIntSlider(name + " Freq Extend Factor", createNone(1, 16));
+        addIntSlider(name + " Freq Extend Factor", createNone(1, 64));
     }
 
     private ParameterMapping extendLevelMapping() {
@@ -300,14 +300,14 @@ public class UIControls implements ControlListener, ModelUIBuilder {
         addSlider(name + " Attack", createSquared(0, 100, 0, 8000));
         addSlider(name + " Decay", createSquared(0, 100, 1, 6000));
         addSlider(name + " Extend Level", extendLevelMapping());
-        addIntSlider(name + " Extend Factor", createNone(1, 16));
+        addIntSlider(name + " Extend Factor", createNone(1, 64));
     }
 
     public void addADEnvelope(String name) {
         addSlider(name + " Attack", createSquared(0, 100, 0, 32000));
         addSlider(name + " Decay", createSquared(0, 100, 1, 32000));
         addSlider(name + " Extend Level", extendLevelMapping());
-        addIntSlider(name + " Extend Factor", createNone(1, 16));
+        addIntSlider(name + " Extend Factor", createNone(1, 64));
     }
 
     public void addBiquad(String name, int low, int high) {
