@@ -1,6 +1,7 @@
 package com.korisnamedia.thonk;
 
 import com.korisnamedia.thonk.ui.Layout;
+import com.prokmodular.comms.Messages;
 import com.prokmodular.comms.SerialCommunicatorListener;
 import controlP5.Button;
 import controlP5.CallbackEvent;
@@ -9,6 +10,7 @@ import controlP5.Slider2D;
 import processing.core.PGraphics;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 import static com.korisnamedia.thonk.ControlPanel.MORPH_ID;
 import static processing.core.PApplet.println;
@@ -188,19 +190,10 @@ public class MorphAndStorage implements SerialCommunicatorListener {
 
     @Override
     public void onData(String propName, String propValue) {
-        if (propName.equalsIgnoreCase("quadState")) {
-            int bankState = Integer.parseInt(propValue);
-            for (int i = 0; i < 4; i++) {
-                // Mask off bottom 4 bits
-                quads.get(i).setState(bankState & 0xF);
-                // Shift right 4
-                bankState >>= 4;
-            }
-        } else if (propName.equalsIgnoreCase("quad")) {
-            int bankIndex = Integer.parseInt(propValue);
-            for (int i = 0; i < 4; i++) {
-                quads.get(i).setSelected(i == bankIndex);
-            }
+        if (propName.equalsIgnoreCase(Messages.QUAD_STATE)) {
+            setQuadState(propValue);
+        } else if (propName.equalsIgnoreCase(Messages.QUAD_SELECT_INDEX)) {
+            setSelectedQuad(propValue);
         }
 
 //        else if(propName.equalsIgnoreCase("morph")) {
@@ -213,5 +206,35 @@ public class MorphAndStorage implements SerialCommunicatorListener {
 //                morphControl.setBroadcast(true);
 //            }
 //        }
+    }
+
+    private void setSelectedQuad(String quadIndex) {
+        if(quadIndex == null) return;
+        int bankIndex = Integer.parseInt(quadIndex);
+        for (int i = 0; i < 4; i++) {
+            quads.get(i).setSelected(i == bankIndex);
+        }
+    }
+
+    private void setQuadState(String quadState) {
+        if(quadState == null) return;
+
+        println("MorphAndStorage:: quad state " + quadState);
+        int bankState = Integer.parseInt(quadState);
+        for (int i = 0; i < 4; i++) {
+            // Mask off bottom 4 bits
+            quads.get(i).setState(bankState & 0xF);
+            // Shift right 4
+            bankState >>= 4;
+        }
+    }
+
+    public void setState(Map<String, String> moduleState) {
+        if(moduleState.containsKey(Messages.QUAD_STATE)) {
+            setQuadState(moduleState.get(Messages.QUAD_STATE));
+        }
+        if(moduleState.containsKey(Messages.QUAD_SELECT_INDEX)) {
+            setSelectedQuad(moduleState.get(Messages.QUAD_SELECT_INDEX));
+        }
     }
 }

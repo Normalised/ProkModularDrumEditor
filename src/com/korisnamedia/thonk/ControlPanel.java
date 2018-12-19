@@ -1,6 +1,7 @@
 package com.korisnamedia.thonk;
 
 import com.prokmodular.comms.Commands;
+import com.prokmodular.comms.Messages;
 import controlP5.ControlP5;
 import controlP5.ControlP5Constants;
 import processing.core.PGraphics;
@@ -21,7 +22,7 @@ public class ControlPanel {
     private MorphAndStorage morphAndStorage;
 
     private HashMap<String, String> nameMap;
-    private boolean devMode = false;
+    private boolean devMode = true;
 
     public ControlPanel(PGraphics graphics, ControlP5 cp5, ThonkModularApp thonkModularApp) {
         this.cp5 = cp5;
@@ -38,12 +39,14 @@ public class ControlPanel {
         morphAndStorage = new MorphAndStorage(graphics, cp5, app);
     }
 
-    public void createDefaultControls() {
+    public void createDefaultControls(Map<String, String> moduleState) {
 
         addTools();
 
         addMetronome();
         morphAndStorage.create(0,40);
+
+        morphAndStorage.setState(moduleState);
 
         cp5.addToggle("Exclusive")
                 .setPosition(300, app.height - 24)
@@ -94,12 +97,12 @@ public class ControlPanel {
         int y = app.height - 24;
 
         showNameAndVersion(nameMap.get(moduleState.get("name")),
-                moduleState.get(Commands.VERSION),
-                moduleState.get(Commands.FIRMWARE_VERSION), x - 40, y);
-        showSD(moduleState.get(Commands.HAS_SD_CARD).equalsIgnoreCase("1"), x + 30, y);
-        showMemory("MEM " + moduleState.get(Commands.AUDIO_MEMORY), x + 80, y);
-        showBlocks(moduleState.get(Commands.BLOCK_SIZE), x + 140, y + 15);
-        showCPU(moduleState.get(Commands.CPU),x + 210, y);
+                moduleState.get(Messages.VERSION),
+                moduleState.get(Messages.FIRMWARE_VERSION), x - 40, y);
+        showSD(moduleState.get(Messages.HAS_SD_CARD).equalsIgnoreCase("1"), x + 30, y);
+        showMemory("MEM " + moduleState.get(Messages.AUDIO_MEMORY), x + 80, y);
+        showBlocks(moduleState.get(Messages.BLOCK_SIZE), x + 140, y + 15);
+        showCPU(moduleState.get(Messages.CPU),x + 210, y);
     }
 
     private void showBlocks(String blocks, int x, int y) {
