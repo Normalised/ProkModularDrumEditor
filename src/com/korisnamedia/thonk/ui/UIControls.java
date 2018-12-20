@@ -5,6 +5,8 @@ import com.korisnamedia.thonk.ThonkModularApp;
 import com.korisnamedia.thonk.tuning.NoteMapper;
 import com.prokmodular.ui.ModelUIBuilder;
 import controlP5.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,6 +18,9 @@ import static com.prokmodular.model.ParameterMapping.createNone;
 import static com.prokmodular.model.ParameterMapping.createSquared;
 
 public class UIControls implements ControlListener, ModelUIBuilder {
+
+    final Logger logger = LoggerFactory.getLogger(UIControls.class);
+
     private final ThonkModularApp app;
     public ControlP5 cp5;
 
@@ -78,12 +83,12 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     }
 
     private void setNote() {
-        cp5.println("Set Note " + lastParamID + " : " + tunableControls.containsKey(lastParamID));
+        logger.debug("Set Note " + lastParamID + " : " + tunableControls.containsKey(lastParamID));
 
         if(noteNumberInput.getText().contains(",")) {
             // assume list
             String[] notes = noteNumberInput.getText().split(",");
-            cp5.println("Setting multiple notes : " + notes.length);
+            logger.debug("Setting multiple notes : " + notes.length);
             int controlIndex = 0;
             Object[] controls = tunableControls.values().toArray();
             for(String noteText : notes) {
@@ -107,7 +112,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
                     Integer noteNumber = Integer.parseInt(noteNumberInput.getText());
                     Slider s = tunableControls.get(lastParamID);
                     float frequency = (float) noteMapper.getFrequency(noteNumber);
-                    cp5.println("Setting slider " + lastParamID + " to note number " + noteNumber + " with freq " + frequency);
+                    logger.debug("Setting slider " + lastParamID + " to note number " + noteNumber + " with freq " + frequency);
                     s.setValue(frequency);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -199,7 +204,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     public void controlEvent(ControlEvent theEvent) {
         int paramID = theEvent.getController().getId() - 1;
 
-//        cp5.println("Control event " + paramID);
+//        logger.debug("Control event " + paramID);
 
         if(paramID > -1) {
             if(lastParamID != paramID && tunableControls.containsKey(lastParamID)) {

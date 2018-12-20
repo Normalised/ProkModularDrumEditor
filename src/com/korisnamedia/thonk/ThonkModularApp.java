@@ -8,6 +8,8 @@ import com.prokmodular.files.ModelExporter;
 import com.korisnamedia.thonk.ui.UIControls;
 import com.prokmodular.model.*;
 import controlP5.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import processing.core.PApplet;
 import processing.core.PImage;
 
@@ -18,8 +20,11 @@ import java.util.List;
 import java.util.Map;
 
 import static com.prokmodular.comms.Commands.*;
+import static org.slf4j.LoggerFactory.*;
 
 public class ThonkModularApp extends PApplet implements SerialCommunicatorListener, ModelParamListener {
+
+    final Logger logger = getLogger(ThonkModularApp.class);
 
     ControlP5 cp5;
 
@@ -62,6 +67,8 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     private SerialStatus serialStatus = SerialStatus.STATUS_WAITING;
 
     public void settings() {
+
+        logger.debug("settings()");
 
         paramCache = new HashMap<>();
         models = new HashMap<>();
@@ -119,7 +126,7 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     }
 
     public void serialConnected(String helloType) {
-        println("Serial Connected " + helloType);
+        logger.debug("Serial Connected " + helloType);
 
         if(helloType.contains("_")) {
             helloType = helloType.substring(0,helloType.indexOf("_"));
@@ -144,7 +151,7 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     }
 
     private void createUIForModel() {
-        println("Create UI For model " + currentModel.getConfig().getName() + " : " + currentModel.getConfig().version);
+        logger.debug("Create UI For model " + currentModel.getConfig().getName() + " : " + currentModel.getConfig().version);
         currentUI.createUI(ui, currentModel.getConfig().version);
         if(currentUI instanceof UIForProcessing) {
             ((UIForProcessing) currentUI).createExtraUI(cp5);
@@ -157,27 +164,27 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
             setModelVersion(paramValue);
 
         } else if(paramName.equalsIgnoreCase(Messages.FIRMWARE_VERSION)) {
-            println("Firmware Version " + paramValue);
+            logger.debug("Firmware Version " + paramValue);
         } else if(paramName.equalsIgnoreCase(Messages.HAS_SD_CARD)) {
-            println("Has SD Card " + paramValue);
+            logger.debug("Has SD Card " + paramValue);
         } else {
-            //println("Set module state " + paramName + " -> " + paramValue);
+            //logger.debug("Set module state " + paramName + " -> " + paramValue);
             moduleState.put(paramName, paramValue);
         }
     }
 
     private void setModelVersion(String paramValue) {
         if(currentModel != null) {
-            println("Set Model Version " + paramValue);
+            logger.debug("Set Model Version " + paramValue);
             currentModel.getConfig().version = parseInt(paramValue);
         } else {
-            println("CURRENT MODEL IS NULL");
+            logger.debug("CURRENT MODEL IS NULL");
         }
     }
 
     private void createMainUI() {
 
-        println("Creating main UI");
+        logger.debug("Creating main UI");
         uiCreated = true;
         ui.create();
 
@@ -252,15 +259,15 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     }
 
     public void applyPreset(Preset p) {
-        cp5.println("Apply preset " + p.config.hello + ". Version " + p.config.version + " with " + p.params.size() + " params");
+        logger.debug("Apply preset " + p.config.hello + ". Version " + p.config.version + " with " + p.params.size() + " params");
 
         if(p.config.version > currentModel.getConfig().version) {
-            println("Preset version is newer than firmware");
+            logger.debug("Preset version is newer than firmware");
             return;
         }
 
         if(p.params.size() != parameters.size()) {
-            cp5.println("Preset has wrong number of params. Expected " + parameters.size());
+            logger.debug("Preset has wrong number of params. Expected " + parameters.size());
         }
 
         for(int i=0;i<p.params.size();i++) {
@@ -278,7 +285,7 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     }
 
     public void setParam(int modelIndex, int paramID, float paramValue) {
-        println("Set Param. " + modelIndex + " : " + paramID + " -> " + paramValue);
+        logger.debug("Set Param. " + modelIndex + " : " + paramID + " -> " + paramValue);
     }
 
     public void generateHeader() {
@@ -315,7 +322,7 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
     }
 
     public void setModelSize(int numParams) {
-        println("Set Model Size " + numParams);
+        logger.debug("Set Model Size " + numParams);
     }
 
     public int getWidth() {
@@ -375,7 +382,7 @@ public class ThonkModularApp extends PApplet implements SerialCommunicatorListen
                 // cache params until ui is created
                 paramCache.put(paramID, val);
             } else {
-                cp5.println("Parameters are empty, cant set current param for ID " + paramID + " to " + val);
+                logger.debug("Parameters are empty, cant set current param for ID " + paramID + " to " + val);
             }
             return;
         }

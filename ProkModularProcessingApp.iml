@@ -11,8 +11,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="core" level="project" />
-    <orderEntry type="module" module-name="controlp5" />
     <orderEntry type="module" module-name="ProkModularCore" />
     <orderEntry type="module" module-name="ProkDrumPatchTools" />
+    <orderEntry type="module" module-name="controlp5" />
   </component>
 </module>

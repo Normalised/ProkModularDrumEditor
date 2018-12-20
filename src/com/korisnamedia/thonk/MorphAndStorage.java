@@ -7,15 +7,18 @@ import controlP5.Button;
 import controlP5.CallbackEvent;
 import controlP5.ControlP5;
 import controlP5.Slider2D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import processing.core.PGraphics;
 
 import java.util.ArrayList;
 import java.util.Map;
 
 import static com.korisnamedia.thonk.ControlPanel.MORPH_ID;
-import static processing.core.PApplet.println;
 
 public class MorphAndStorage implements SerialCommunicatorListener {
+
+    final Logger logger = LoggerFactory.getLogger(MorphAndStorage.class);
     private final PGraphics graphics;
     private final ControlP5 cp5;
     private final ThonkModularApp app;
@@ -39,7 +42,7 @@ public class MorphAndStorage implements SerialCommunicatorListener {
         blockHeight = 108;
         blockWidth = 108;
 
-        println("Create MorphAndStorage");
+        logger.debug("Create MorphAndStorage");
         quads = new ArrayList<>();
 
         app.serialCommunicator.addSerialCommsListener(this);
@@ -131,14 +134,14 @@ public class MorphAndStorage implements SerialCommunicatorListener {
         int col = mx / (blockWidth / 2);
         int itemIndex = row == 0 ? (col == 0 ? 3 : 2) : (col == 0 ? 0 : 1);
 
-        println("Quad Clicked " + row + ", " + col + ". Index " + index + ". Item Index " + itemIndex);
+        logger.debug("Quad Clicked " + row + ", " + col + ". Index " + index + ". Item Index " + itemIndex);
 
         if(saveMode) {
-//            println("Saving current to " + index + " : " + itemIndex);
+//            logger.debug("Saving current to " + index + " : " + itemIndex);
             app.saveModel((index * 4) + itemIndex);
             exitSaveMode();
         } else {
-//            println("Selecting model " + index + " : " + itemIndex);
+//            logger.debug("Selecting model " + index + " : " + itemIndex);
             app.selectModel((index * 4) + itemIndex);
 
             morphControl.setValue(col * 1024, (1 - row) * 1024);
@@ -151,7 +154,7 @@ public class MorphAndStorage implements SerialCommunicatorListener {
     }
 
     private void clearQuad(int index) {
-//        println("Clear Quad " + index);
+//        logger.debug("Clear Quad " + index);
         app.clearQuad(index);
     }
 
@@ -219,7 +222,7 @@ public class MorphAndStorage implements SerialCommunicatorListener {
     private void setQuadState(String quadState) {
         if(quadState == null) return;
 
-        println("MorphAndStorage:: quad state " + quadState);
+        logger.debug("MorphAndStorage:: quad state " + quadState);
         int bankState = Integer.parseInt(quadState);
         for (int i = 0; i < 4; i++) {
             // Mask off bottom 4 bits

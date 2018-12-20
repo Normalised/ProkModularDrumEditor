@@ -5,9 +5,6 @@ import controlP5.Controller;
 import controlP5.ControllerView;
 import processing.core.PGraphics;
 
-import static processing.core.PApplet.dist;
-import static processing.core.PApplet.println;
-
 public class QuadUI extends Controller<QuadUI> {
 
     private int state = 0;

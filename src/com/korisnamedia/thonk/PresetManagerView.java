@@ -6,16 +6,19 @@ import com.prokmodular.model.ProkModel;
 import controlP5.ControlP5;
 import controlP5.ScrollableList;
 import controlP5.Textfield;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import processing.core.PGraphics;
 
 import java.awt.*;
 import java.io.File;
 import java.util.List;
 
-import static processing.core.PApplet.println;
 import static processing.core.PApplet.selectFolder;
 
 public class PresetManagerView {
+
+    final Logger logger = LoggerFactory.getLogger(PresetManagerView.class);
     private final File prokDir;
     private final ControlP5 cp5;
     private final PGraphics graphics;
@@ -44,7 +47,7 @@ public class PresetManagerView {
         patchFolder = modelDir;
         presetManager.setCurrentModel(currentModel);
 
-        println("Set Current Model " + currentModel.getConfig().getName());
+        logger.debug("Set Current Model " + currentModel.getConfig().getName());
 
         if(presetList != null) {
             listFiles();
@@ -74,7 +77,7 @@ public class PresetManagerView {
             if(cp5.isControlDown()) {
                 savePreset(f);
             } else {
-                println("List event " + theEvent.getName() + " : " + theEvent.getValue());
+                logger.debug("List event " + theEvent.getName() + " : " + theEvent.getValue());
                 loadPreset(f);
             }
         });
@@ -96,19 +99,19 @@ public class PresetManagerView {
     }
 
     public void folderChosen(File selectedFolder) {
-        println("Folder Chosen " + selectedFolder.getAbsolutePath());
+        logger.debug("Folder Chosen " + selectedFolder.getAbsolutePath());
         patchFolder = selectedFolder;
         listFiles();
     }
 
     private void savePreset(File f) {
-        println("Replacing existing preset " + f.getAbsolutePath());
+        logger.debug("Replacing existing preset " + f.getAbsolutePath());
         presetManager.savePreset(app.getPreset(), f);
         listFiles();
     }
 
     private void savePreset() {
-        println("Save Preset : " + presetNameInput.getText());
+        logger.debug("Save Preset : " + presetNameInput.getText());
         if(presetNameInput.getText().length() > 0) {
             presetManager.savePreset(app.getPreset(), new File(patchFolder, presetNameInput.getText() + ".prk"));
         }
@@ -118,7 +121,7 @@ public class PresetManagerView {
     private void loadPreset(File presetFile) {
 
         try {
-            println("Loading preset file " + presetFile.getName());
+            logger.debug("Loading preset file " + presetFile.getName());
             Preset p = presetManager.readPreset(presetFile);
             if(p != null) {
                 app.applyPreset(p);

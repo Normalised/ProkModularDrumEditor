@@ -4,15 +4,18 @@ import com.prokmodular.comms.Commands;
 import com.prokmodular.comms.Messages;
 import controlP5.ControlP5;
 import controlP5.ControlP5Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import processing.core.PGraphics;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static java.lang.Integer.parseInt;
-import static processing.core.PApplet.println;
 
 public class ControlPanel {
+    final Logger logger = LoggerFactory.getLogger(ControlPanel.class);
+
     public static final int METRONOME_ID = 101;
     public static final int MORPH_ID = 100;
 
@@ -35,7 +38,7 @@ public class ControlPanel {
         nameMap.put("hihat","HH");
         nameMap.put("clap","CP");
 
-        println("Create ControlPanel");
+        logger.debug("Create ControlPanel");
         morphAndStorage = new MorphAndStorage(graphics, cp5, app);
     }
 
