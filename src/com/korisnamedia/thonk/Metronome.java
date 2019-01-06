@@ -1,7 +1,8 @@
 package com.korisnamedia.thonk;
 
+import com.prokmodular.comms.CommandContents;
 import com.prokmodular.comms.Commands;
-import com.prokmodular.comms.SerialCommunicator;
+import com.prokmodular.comms.ModuleSerialConnection;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,14 +25,14 @@ class MetronomeTask extends TimerTask {
 
 public class Metronome {
 
-    private final SerialCommunicator comms;
+    private final ModuleSerialConnection comms;
     private final MetronomeTask timerTask;
     private int interval;
     private int count;
     private Timer metronomeTimer;
     private boolean active;
 
-    public Metronome(SerialCommunicator sc) {
+    public Metronome(ModuleSerialConnection sc) {
         comms = sc;
         timerTask = new MetronomeTask(this);
         active = false;
@@ -53,7 +54,7 @@ public class Metronome {
 
         if(count >= interval) {
             count = 0;
-            comms.sendCommand(Commands.TRIGGER, "");
+            comms.sendCommand(new CommandContents(Commands.TRIGGER, ""));
         }
     }
 
