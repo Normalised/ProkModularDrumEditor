@@ -194,11 +194,6 @@ public class MorphAndStorage implements ModuleConnectionListener {
     }
 
     @Override
-    public void portsChecked(Map<String, List<Serial>> ports) {
-
-    }
-
-    @Override
     public void onData(String propName, String propValue) {
         if (propName.equalsIgnoreCase(Messages.QUAD_STATE)) {
             setQuadState(propValue);

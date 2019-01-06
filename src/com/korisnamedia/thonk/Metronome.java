@@ -1,5 +1,6 @@
 package com.korisnamedia.thonk;
 
+import com.prokmodular.comms.CommandContents;
 import com.prokmodular.comms.Commands;
 import com.prokmodular.comms.ModuleSerialConnection;
 
@@ -53,7 +54,7 @@ public class Metronome {
 
         if(count >= interval) {
             count = 0;
-            comms.sendCommand(Commands.TRIGGER, "");
+            comms.sendCommand(new CommandContents(Commands.TRIGGER, ""));
         }
     }
 

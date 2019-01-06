@@ -89,7 +89,7 @@ public class ThonkModularApp extends PApplet implements ModelParamListener {
         moduleState.put(Messages.NAME, "");
 
         moduleSerialConnection = new ModuleSerialConnection(moduleState);
-        moduleScanner = new ModuleScanner(moduleSerialConnection);
+        moduleScanner = new ModuleScanner();
         moduleSerialConnection.addModelParamListener(this);
         modelExporter = new ModelExporter(moduleSerialConnection);
 
@@ -102,7 +102,7 @@ public class ThonkModularApp extends PApplet implements ModelParamListener {
     }
 
     public void keyPressed() {
-        if (key == 32) moduleSerialConnection.sendCommand(TRIGGER, "");
+        if (key == 32) moduleSerialConnection.sendCommand(new CommandContents(TRIGGER, ""));
     }
 
     public void setup() {
@@ -183,7 +183,7 @@ public class ThonkModularApp extends PApplet implements ModelParamListener {
 
         if(!paramCache.isEmpty()) {
             for(Map.Entry<Integer, Float> item : paramCache.entrySet()) {
-                setCurrentParam(item.getKey(), item.getValue());
+                setCurrentParam(new ParamMessage(item.getKey(), item.getValue()));
             }
 
             paramCache.clear();
@@ -191,7 +191,7 @@ public class ThonkModularApp extends PApplet implements ModelParamListener {
     }
 
     public void clear() {
-        moduleSerialConnection.sendCommand(CLEAR, "");
+        moduleSerialConnection.sendCommand(new CommandContents(CLEAR, ""));
     }
 
     public void draw() {
@@ -259,8 +259,8 @@ public class ThonkModularApp extends PApplet implements ModelParamListener {
         metronome.on(on);
     }
 
-    public void setParam(int modelIndex, int paramID, float paramValue) {
-        logger.debug("Set Param. " + modelIndex + " : " + paramID + " -> " + paramValue);
+    public void setParam(int modelIndex, ParamMessage msg) {
+        logger.debug("Set Param. " + modelIndex + " : " + msg.id + " -> " + msg.value);
     }
 
     public void generateHeader() {
@@ -277,23 +277,23 @@ public class ThonkModularApp extends PApplet implements ModelParamListener {
     }
 
     public void getCurrentParams() {
-        moduleSerialConnection.sendCommand(Commands.SEND_PARAMS, Commands.INDEX_FOR_CURRENT_MODEL);
+        moduleSerialConnection.sendCommand(new CommandContents(Commands.SEND_PARAMS, Commands.INDEX_FOR_CURRENT_MODEL));
     }
 
     public void saveModel(int index) {
-        moduleSerialConnection.sendCommand(Commands.SAVE, String.valueOf(index));
+        moduleSerialConnection.sendCommand(new CommandContents(Commands.SAVE, String.valueOf(index)));
     }
 
     public void selectModel(int index) {
-        moduleSerialConnection.sendCommand(Commands.SELECT_MODEL, String.valueOf(index));
+        moduleSerialConnection.sendCommand(new CommandContents(Commands.SELECT_MODEL, String.valueOf(index)));
     }
 
     public void clearQuad(int index) {
-        moduleSerialConnection.sendCommand(Commands.CLEAR_QUAD, String.valueOf(index));
+        moduleSerialConnection.sendCommand(new CommandContents(Commands.CLEAR_QUAD, String.valueOf(index)));
     }
 
     public void setExclusive(boolean on) {
-        moduleSerialConnection.sendCommand(Commands.EXCLUSIVE, on ? "1" : "0");
+        moduleSerialConnection.sendCommand(new CommandContents(Commands.EXCLUSIVE, on ? "1" : "0"));
     }
 
     public void setModelSize(int numParams) {
@@ -331,11 +331,11 @@ public class ThonkModularApp extends PApplet implements ModelParamListener {
     public void setMorph(float newX, float newY) {
         if (newX != morphX) {
             morphX = newX;
-            moduleSerialConnection.sendCommand(MORPH_X, Float.toString(morphX));
+            moduleSerialConnection.sendCommand(new CommandContents(MORPH_X, Float.toString(morphX)));
         }
         if (newY != morphY) {
             morphY = newY;
-            moduleSerialConnection.sendCommand(MORPH_Y, Float.toString(morphY));
+            moduleSerialConnection.sendCommand(new CommandContents(MORPH_Y, Float.toString(morphY)));
         }
     }
 
@@ -347,24 +347,24 @@ public class ThonkModularApp extends PApplet implements ModelParamListener {
         parameters.add(mapping);
     }
 
-    public void setCurrentParam(int paramID, float val) {
+    public void setCurrentParam(ParamMessage msg) {
         if (parameters.size() == 0) {
             if(!uiCreated) {
                 // cache params until ui is created
-                paramCache.put(paramID, val);
+                paramCache.put(msg.id, msg.value);
             } else {
-                logger.debug("Parameters are empty, cant set current param for ID " + paramID + " to " + val);
+                logger.debug("Parameters are empty, cant set current param for ID " + msg.id + " to " + msg.value);
             }
             return;
         }
-        ParameterMapping mapping = parameters.get(paramID);
-        ui.setCurrentParam(paramID, mapping.fromModule(val));
+        ParameterMapping mapping = parameters.get(msg.id);
+        ui.setCurrentParam(msg.id, mapping.fromModule(msg.value));
     }
 
     public void handleControlEvent(int paramID, float val) {
         if (paramID >= parameters.size()) return;
         ParameterMapping mapping = parameters.get(paramID);
-        moduleSerialConnection.sendCurrentParam(paramID, mapping.toModule(val));
+        moduleSerialConnection.sendCurrentParam(new ParamMessage(paramID, mapping.toModule(val)));
     }
 
 
