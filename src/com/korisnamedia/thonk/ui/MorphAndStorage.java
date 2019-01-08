@@ -23,7 +23,7 @@ public class MorphAndStorage implements ModuleConnectionListener {
     final Logger logger = LoggerFactory.getLogger(MorphAndStorage.class);
     private final PGraphics graphics;
     private final ControlP5 cp5;
-    private final ThonkModularApp app;
+    private final ModuleEditorView app;
     private ArrayList<QuadUI> quads;
     private Slider2D morphControl;
     private int blockHeight;
@@ -35,12 +35,12 @@ public class MorphAndStorage implements ModuleConnectionListener {
 
     private Layout layout;
 
-    public MorphAndStorage(PGraphics graphics, ControlP5 cp5, ThonkModularApp app) {
+    public MorphAndStorage(PGraphics graphics, ControlP5 cp5, ModuleEditorView view) {
 
         layout = new Layout();
         this.graphics = graphics;
         this.cp5 = cp5;
-        this.app = app;
+        this.app = view;
         blockHeight = 108;
         blockWidth = 108;
 

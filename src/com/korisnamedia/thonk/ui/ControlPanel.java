@@ -20,17 +20,17 @@ public class ControlPanel {
     public static final int MORPH_ID = 100;
 
     private final ControlP5 cp5;
-    private final ThonkModularApp app;
+    private final ModuleEditorView app;
     private final PGraphics graphics;
     private MorphAndStorage morphAndStorage;
 
     private HashMap<String, String> nameMap;
     private boolean devMode = true;
 
-    public ControlPanel(PGraphics graphics, ControlP5 cp5, ThonkModularApp thonkModularApp) {
+    public ControlPanel(PGraphics graphics, ControlP5 cp5, ModuleEditorView view) {
         this.cp5 = cp5;
         this.graphics = graphics;
-        app = thonkModularApp;
+        app = view;
 
         nameMap = new HashMap<>();
         nameMap.put("kick","BD");
@@ -39,7 +39,7 @@ public class ControlPanel {
         nameMap.put("clap","CP");
 
         logger.debug("Create ControlPanel");
-        morphAndStorage = new MorphAndStorage(graphics, cp5, app);
+        morphAndStorage = new MorphAndStorage(graphics, cp5, view);
     }
 
     public void createDefaultControls(Map<String, String> moduleState) {
@@ -52,7 +52,7 @@ public class ControlPanel {
         morphAndStorage.setState(moduleState);
 
         cp5.addToggle("Exclusive")
-                .setPosition(300, app.height - 24)
+                .setPosition(300, app.getHeight() - 24)
                 .setSize(20,20)
                 .onChange(theEvent -> {
                     boolean on = theEvent.getController().getValue() > 0;
@@ -78,7 +78,7 @@ public class ControlPanel {
     }
 
     private void addMetronome() {
-        int y = app.height - 24;
+        int y = app.getHeight() - 24;
 
         cp5.addToggle("Metro")
                 .setPosition(10, y)
@@ -96,8 +96,8 @@ public class ControlPanel {
 
         showConnected(connected);
 
-        int x = app.width - 400;
-        int y = app.height - 24;
+        int x = app.getWidth() - 400;
+        int y = app.getHeight() - 24;
 
         showNameAndVersion(nameMap.get(moduleState.get("name")),
                 moduleState.get(Messages.VERSION),
@@ -138,7 +138,7 @@ public class ControlPanel {
             graphics.fill(255,0,0);
         }
 
-        graphics.rect(app.width - 20,app.height - 20,10,10);
+        graphics.rect(app.getWidth() - 20,app.getHeight() - 20,10,10);
     }
 
     private void showMemory(String audiomem, int x, int y) {

@@ -21,7 +21,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     final Logger logger = LoggerFactory.getLogger(UIControls.class);
 
-    private final ThonkModularApp app;
+    private final ModuleEditorView app;
     public ControlP5 cp5;
 
     private ArrayList<Controller> controls;
@@ -37,14 +37,14 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     private NoteMapper noteMapper;
 
-    public UIControls(ThonkModularApp thonkModularApp, ControlP5 cp5) {
+    public UIControls(ModuleEditorView view, ControlP5 cp5) {
         layout = new Layout();
         controls = new ArrayList<>();
         tunableControls = new HashMap<>();
 
         noteMapper = new NoteMapper();
 
-        app = thonkModularApp;
+        app = view;
         this.cp5 = cp5;
         this.cp5.addListener(this);
 

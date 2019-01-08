@@ -23,7 +23,7 @@ public class PresetManagerView {
     private final File prokDir;
     private final ControlP5 cp5;
     private final PGraphics graphics;
-    private final ThonkModularApp app;
+    private final ModuleEditorView app;
 
     private ScrollableList presetList;
 
@@ -32,10 +32,10 @@ public class PresetManagerView {
     private PresetManager presetManager;
     private File patchFolder;
 
-    public PresetManagerView(PGraphics graphics, ControlP5 cp5, ThonkModularApp thonkModularApp) {
+    public PresetManagerView(PGraphics graphics, ControlP5 cp5, ModuleEditorView view) {
         this.cp5 = cp5;
         this.graphics = graphics;
-        app = thonkModularApp;
+        app = view;
 
         prokDir = app.getDataDirectory();
         presetManager = new PresetManager();
