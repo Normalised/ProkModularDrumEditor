@@ -17,12 +17,12 @@ import java.util.Map;
 
 import static org.slf4j.LoggerFactory.*;
 
-public class ThonkModularApp extends PApplet {
+public class ThonkModularApp extends PApplet implements ModuleScanStatusListener {
 
     final Logger logger = getLogger(ThonkModularApp.class);
 
     private enum AppState {
-        SCANNING, MODULE_SELECT, MODULE_EDIT
+        SCANNING, MODULE_SELECT, MODULE_EDIT, NO_MODULES_AVAILABLE
     }
     public ControlP5 cp5;
 
@@ -52,6 +52,7 @@ public class ThonkModularApp extends PApplet {
 
         logger.debug("settings()");
         moduleScanner = new ModuleScanner();
+        moduleScanner.addScanStatusListener(this);
 
         uis = new HashMap<>();
 
@@ -97,9 +98,12 @@ public class ThonkModularApp extends PApplet {
         currentModule = null;
     }
 
-    public void moduleScanComplete(List<ModuleInfo> availableModules) {
+    @Override
+    public void scanComplete(List<ModuleInfo> availableModules) {
         if(!availableModules.isEmpty()) {
             showModuleSelect(availableModules);
+        } else {
+            appState = AppState.NO_MODULES_AVAILABLE;
         }
     }
 
@@ -135,6 +139,9 @@ public class ThonkModularApp extends PApplet {
             editorView.update();
             stroke(0xFF777777);
             line(0, height - 30, width, height - 30);
+        } else if(appState == AppState.NO_MODULES_AVAILABLE) {
+            getGraphics().fill(ControlP5Constants.WHITE);
+            getGraphics().text("No Modules Found", (getWidth() / 2) - 50, getHeight() - 20);
         }
 
         drawLogo();
@@ -174,8 +181,6 @@ public class ThonkModularApp extends PApplet {
     public File getDataDirectory() {
         return prokDir;
     }
-
-
 
     public static void main(String[] args) {
         PApplet.main("com.korisnamedia.thonk.ThonkModularApp", args);
