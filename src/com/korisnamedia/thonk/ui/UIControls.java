@@ -1,5 +1,6 @@
 package com.korisnamedia.thonk.ui;
 
+import com.prokmodular.ModuleInfo;
 import com.prokmodular.model.ParameterMapping;
 import com.korisnamedia.thonk.ThonkModularApp;
 import com.korisnamedia.thonk.tuning.NoteMapper;
@@ -11,8 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static com.korisnamedia.thonk.ui.ControlPanel.METRONOME_ID;
 import static com.korisnamedia.thonk.ui.ControlPanel.MORPH_ID;
+import static com.korisnamedia.thonk.ui.ModuleEditorView.METRONOME_ID;
 import static com.prokmodular.model.ParameterMapping.createLinear;
 import static com.prokmodular.model.ParameterMapping.createNone;
 import static com.prokmodular.model.ParameterMapping.createSquared;
@@ -36,6 +37,14 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     private Textfield noteNumberInput;
 
     private NoteMapper noteMapper;
+    private Button setNoteButton;
+    private Button doubleFreqButton;
+    private Button halveFreqButton;
+    private ModuleInfo module;
+    private int firmwareVersion = 0;
+
+    private int extendFactorMinimum = 1;
+    private int decayMax = 32000;
 
     public UIControls(ModuleEditorView view, ControlP5 cp5) {
         layout = new Layout();
@@ -47,21 +56,35 @@ public class UIControls implements ControlListener, ModelUIBuilder {
         app = view;
         this.cp5 = cp5;
         this.cp5.addListener(this);
-
     }
 
-    public void create() {
-        cp5.addButton("Set Note")
+    public void setModule(ModuleInfo moduleToUse) {
+        clear();
+
+        module = moduleToUse;
+        firmwareVersion = module.getFirmwareVersion();
+        if(firmwareVersion > 3) {
+            extendFactorMinimum = -8;
+            decayMax = 98000;
+        }
+        module.ui.createUI(this, module.getFirmwareVersion(), module.getVersion());
+        if(module.ui instanceof UIForProcessing) {
+            ((UIForProcessing) module.ui).createExtraUI(cp5);
+        }
+    }
+
+    public void createNoteControls() {
+        setNoteButton =  cp5.addButton("Set Note")
                 .setPosition(layout.leftMargin, app.getHeight() - 98)
                 .setSize(100, 16)
                 .onRelease(theEvent -> setNote());
 
-        cp5.addButton("Double")
+        doubleFreqButton = cp5.addButton("Double")
                 .setPosition(layout.leftMargin, app.getHeight() - 78)
                 .setSize(100, 16)
                 .onRelease(theEvent -> retuneByFactor(2.0f));
 
-        cp5.addButton("Halve")
+        halveFreqButton = cp5.addButton("Halve")
                 .setPosition(layout.leftMargin, app.getHeight() - 58)
                 .setSize(100, 16)
                 .onRelease(theEvent -> retuneByFactor(0.5f));
@@ -271,30 +294,30 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     }
 
     public void addSineWithEnvelope(String name) {
-        addSineWithEnvelope(name, 32700);
+        addSineWithEnvelope(name, decayMax);
     }
 
     public void addTriModWithEnvelope(String name) {
-        addTriModWithEnvelope(name, 32700);
+        addTriModWithEnvelope(name, decayMax);
     }
 
     public void addSineWithEnvelope(String name, int decay) {
         addTunableSlider(name + " Base Freq", createNone(30, 5000));
-        addSlider(name + " Freq Attack", createSquared(0, 100, 0, 32000));
-        addSlider(name + " Freq Decay", createSquared(1, 100, 1, decay));
-        addSlider(name + " Freq Amount", createSquared(0, 100, 0, 10000));
-        addSlider(name + " Freq Extend Level", extendLevelMapping());
-        addIntSlider(name + " Freq Extend Factor", createNone(1, 64));
+        addOsc(name, decay);
     }
 
     public void addTriModWithEnvelope(String name, int decay) {
         addTunableSlider(name + " Base Freq", createNone(30, 5000));
         addSlider(name + " Pulse Width", createLinear(0, 100, 0, 1));
+        addOsc(name, decay);
+    }
+
+    private void addOsc(String name, int decay) {
         addSlider(name + " Freq Attack", createSquared(0, 100, 0, 32000));
         addSlider(name + " Freq Decay", createSquared(1, 100, 1, decay));
         addSlider(name + " Freq Amount", createSquared(0, 100, 0, 10000));
         addSlider(name + " Freq Extend Level", extendLevelMapping());
-        addIntSlider(name + " Freq Extend Factor", createNone(1, 64));
+        addIntSlider(name + " Freq Extend Factor", createNone(extendFactorMinimum, 64));
     }
 
     private ParameterMapping extendLevelMapping() {
@@ -303,16 +326,16 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     public void addShortExpEnv(String name) {
         addSlider(name + " Attack", createSquared(0, 100, 0, 8000));
-        addSlider(name + " Decay", createSquared(0, 100, 1, 6000));
+        addSlider(name + " Decay", createSquared(0, 100, 1, 12000));
         addSlider(name + " Extend Level", extendLevelMapping());
-        addIntSlider(name + " Extend Factor", createNone(1, 64));
+        addIntSlider(name + " Extend Factor", createNone(extendFactorMinimum, 64));
     }
 
     public void addADEnvelope(String name) {
         addSlider(name + " Attack", createSquared(0, 100, 0, 32000));
-        addSlider(name + " Decay", createSquared(0, 100, 1, 32000));
+        addSlider(name + " Decay", createSquared(0, 100, 1, decayMax));
         addSlider(name + " Extend Level", extendLevelMapping());
-        addIntSlider(name + " Extend Factor", createNone(1, 64));
+        addIntSlider(name + " Extend Factor", createNone(extendFactorMinimum, 64));
     }
 
     public void addBiquad(String name, int low, int high) {
@@ -331,5 +354,37 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     public float getControlValue(int index) {
         return controls.get(index).getValue();
+    }
+
+    public void clear() {
+        for(Controller c : controls) {
+            cp5.remove(c.getName());
+        }
+        controls.clear();
+        currentColumn = 0;
+        currentRow = 0;
+        if(module != null && module.ui instanceof UIForProcessing) {
+            ((UIForProcessing) module.ui).removeExtraUI(cp5);
+        }
+
+    }
+
+    public void hide() {
+        noteNumberInput.hide();
+        setNoteButton.hide();
+        doubleFreqButton.hide();
+        halveFreqButton.hide();
+    }
+
+    public void show() {
+        noteNumberInput.show();
+        setNoteButton.show();
+        doubleFreqButton.show();
+        halveFreqButton.show();
+    }
+
+    public void setPosition(int x, int y) {
+        layout.leftMargin = x;
+        layout.topMargin = y;
     }
 }

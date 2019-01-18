@@ -1,159 +1,210 @@
 package com.korisnamedia.thonk.ui;
 
-import com.korisnamedia.thonk.ThonkModularApp;
+import com.prokmodular.ModuleInfo;
 import com.prokmodular.comms.Messages;
 import controlP5.ControlP5;
 import controlP5.ControlP5Constants;
+import controlP5.Controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import processing.core.PGraphics;
+import processing.core.PImage;
 
 import java.util.HashMap;
-import java.util.Map;
 
+import static controlP5.ControlP5.BitFontStandard56;
 import static java.lang.Integer.parseInt;
 
-public class ControlPanel {
+public class ControlPanel extends Controller<ControlPanel> {
     final Logger logger = LoggerFactory.getLogger(ControlPanel.class);
 
-    public static final int METRONOME_ID = 101;
     public static final int MORPH_ID = 100;
 
     private final ControlP5 cp5;
-    private final ModuleEditorView app;
-    private final PGraphics graphics;
-    private MorphAndStorage morphAndStorage;
+    private final ControlPanelView controlPanelView;
 
     private HashMap<String, String> nameMap;
-    private boolean devMode = true;
 
-    public ControlPanel(PGraphics graphics, ControlP5 cp5, ModuleEditorView view) {
+    private ModuleInfo currentModule;
+    private boolean verticalLayout = false;
+    public boolean canMoveLeft = false;
+    public boolean canMoveRight = false;
+
+    PImage panelImage;
+
+    public ControlPanel(ControlP5 cp5, String uid) {
+        super(cp5, uid);
         this.cp5 = cp5;
-        this.graphics = graphics;
-        app = view;
 
         nameMap = new HashMap<>();
-        nameMap.put("kick","BD");
-        nameMap.put("snare","SD");
-        nameMap.put("hihat","HH");
-        nameMap.put("clap","CP");
+        nameMap.put("kick", "BD");
+        nameMap.put("snare", "SD");
+        nameMap.put("hihat", "HH");
+        nameMap.put("clap", "CP");
 
         logger.debug("Create ControlPanel");
-        morphAndStorage = new MorphAndStorage(graphics, cp5, view);
+
+        controlPanelView = new ControlPanel.ControlPanelView();
+        setView(controlPanelView);
     }
 
-    public void createDefaultControls(Map<String, String> moduleState) {
-
-        addTools();
-
-        addMetronome();
-        morphAndStorage.create(0,40);
-
-        morphAndStorage.setState(moduleState);
-
-        cp5.addToggle("Exclusive")
-                .setPosition(300, app.getHeight() - 24)
-                .setSize(20,20)
-                .onChange(theEvent -> {
-                    boolean on = theEvent.getController().getValue() > 0;
-                    app.setExclusive(on);
-                }).setValue(false);
+    public void setModule(ModuleInfo module) {
+        currentModule = module;
     }
 
-    private void addTools() {
-        if(devMode) {
-            cp5.addButton("Generate Header").setPosition(10,10).setSize(95,20).onRelease(theEvent -> {
-                app.generateHeader();
-            });
+    public ModuleInfo getModule() {
+        return currentModule;
+    }
 
-            cp5.addButton("Save Bank").setPosition(115,10).setSize(95,20).onRelease(theEvent -> {
-                app.saveModelsLocally();
-            });
-        } else {
-            cp5.addButton("Save Bank").setPosition(65,10).setSize(95,20).onRelease(theEvent -> {
-                app.saveModelsLocally();
-            });
+    public void setVerticalLayout(boolean vert) {
+        verticalLayout = vert;
+    }
+
+    public void setPanelImage(PImage imageToUse) {
+        panelImage = imageToUse;
+    }
+
+    private class ControlPanelView implements controlP5.ControllerView<ControlPanel> {
+
+        @Override
+        public void display(PGraphics graphics, ControlPanel controlPanel) {
+
+            int x = 0;
+            int y = verticalLayout ? 20 : 0;
+            if(controlPanel.panelImage != null) {
+                graphics.image(controlPanel.panelImage, 0, y, getWidth(), getHeight() - 150);
+                y = getHeight() - 120;
+            }
+
+            int textY = 9;
+            graphics.textFont(BitFontStandard56);
+
+            if(verticalLayout) {
+                drawReorderArrows(graphics);
+                y += 6;
+
+            } else {
+                y = textY;
+            }
+
+            showNameAndVersion(graphics, nameMap.get(controlPanel.currentModule.type),
+                    controlPanel.currentModule.getVersion(),
+                    controlPanel.currentModule.getFirmwareVersion(), x, y);
+
+            if(verticalLayout) {
+
+                x = getWidth() - 10;
+                y = getHeight() - 120;
+
+            } else {
+                x = getWidth() - 20;
+                y = getHeight() - 20;
+            }
+
+            showConnected(graphics, controlPanel.currentModule.isConnected(), x, y);
+
+            if(verticalLayout) {
+                x = 0;
+                y += 18;
+            } else {
+                x = 60;
+                y = textY;
+            }
+
+            showSD(graphics, controlPanel.currentModule.hasSD, x, y);
+
+            if(verticalLayout) {
+                y += 12;
+            } else {
+                x = 108;
+                y = textY;
+            }
+
+            showMemory(graphics, "Mem " + controlPanel.currentModule.getProperty(Messages.AUDIO_MEMORY), x, y);
+
+            if(verticalLayout) {
+                y += 12;
+            } else {
+                x = 160;
+                y = textY;
+            }
+
+            showBlocks(graphics, controlPanel.currentModule.getProperty(Messages.BLOCK_SIZE), x, y);
+
+            if(verticalLayout) {
+                y += 12;
+            } else {
+                x = 226;
+                y = textY;
+            }
+
+            showCPU(graphics, controlPanel.currentModule.getProperty(Messages.CPU), x, y);
 
         }
-    }
 
-    private void addMetronome() {
-        int y = app.getHeight() - 24;
-
-        cp5.addToggle("Metro")
-                .setPosition(10, y)
-                .setSize(20,20)
-                .setLabelVisible(false)
-                .onChange(theEvent -> {
-            boolean on = theEvent.getController().getValue() > 0;
-            app.useMetronome(on);
-        }).setValue(false);
-
-        app.ui.addLocalSlider("Tempo", 10, 400, METRONOME_ID + 1).setPosition(32, y).setSize(178,20);
-    }
-
-    public void showStatus(boolean connected, Map<String, String> moduleState) {
-
-        showConnected(connected);
-
-        int x = app.getWidth() - 400;
-        int y = app.getHeight() - 24;
-
-        showNameAndVersion(nameMap.get(moduleState.get("name")),
-                moduleState.get(Messages.VERSION),
-                moduleState.get(Messages.FIRMWARE_VERSION), x - 40, y);
-        showSD(moduleState.get(Messages.HAS_SD_CARD).equalsIgnoreCase("1"), x + 30, y);
-        showMemory("MEM " + moduleState.get(Messages.AUDIO_MEMORY), x + 80, y);
-        showBlocks(moduleState.get(Messages.BLOCK_SIZE), x + 140, y + 15);
-        showCPU(moduleState.get(Messages.CPU),x + 210, y);
-    }
-
-    private void showBlocks(String blocks, int x, int y) {
-        graphics.fill(ControlP5Constants.WHITE);
-        graphics.text("Blocks " + blocks, x, y);
-    }
-
-    private void showSD(boolean hasSD, int x, int y) {
-        graphics.fill(ControlP5Constants.WHITE);
-        if(hasSD) {
-            graphics.text("Has SD", x, y + 15);
-        } else {
-            graphics.text("No SD", x, y + 15);
+        private void drawReorderArrows(PGraphics graphics) {
+            graphics.fill(ControlP5Constants.WHITE);
+            graphics.stroke(ControlP5Constants.WHITE);
+            graphics.strokeWeight(4);
+            int arrowWidth = 8;
+            int arrowHeight = 6;
+            int top = 2;
+            if(canMoveLeft) {
+                int lx = 12;
+                graphics.line(lx + arrowWidth,top, lx, top + arrowHeight);
+                graphics.line(lx, top + arrowHeight,lx + arrowWidth,top + (arrowHeight * 2));
+            }
+            if(canMoveRight) {
+                int rx = getWidth() - 20;
+                graphics.line(rx ,top, rx + arrowWidth, top + arrowHeight);
+                graphics.line(rx + arrowWidth, top + arrowHeight, rx,top + (arrowHeight * 2));
+            }
         }
 
-    }
-
-    private void showNameAndVersion(String name, String version, String firmwareVersion, int x, int y) {
-        if(name.length() == 0) return;
-        graphics.fill(ControlP5Constants.WHITE);
-        graphics.text(name + " v" + version + "." + firmwareVersion, x, y + 15);
-    }
-
-    private void showConnected(boolean connected) {
-
-        graphics.noStroke();
-        if(connected) {
-            graphics.fill(0,255,0);
-        } else {
-            graphics.fill(255,0,0);
+        private void showBlocks(PGraphics graphics, String blocks, int x, int y) {
+            graphics.fill(ControlP5Constants.WHITE);
+            graphics.text("Blocks " + blocks, x, y);
         }
 
-        graphics.rect(app.getWidth() - 20,app.getHeight() - 20,10,10);
-    }
+        private void showSD(PGraphics graphics, boolean hasSD, int x, int y) {
+            graphics.fill(ControlP5Constants.WHITE);
+            if (hasSD) {
+                graphics.text("Has SD", x, y);
+            } else {
+                graphics.text("No SD", x, y);
+            }
 
-    private void showMemory(String audiomem, int x, int y) {
-        graphics.fill(ControlP5Constants.WHITE);
-        graphics.text(audiomem, x + 8, y + 15);
-    }
+        }
+
+        private void showNameAndVersion(PGraphics graphics, String name, int version, int firmwareVersion, int x, int y) {
+            if (name.length() == 0) return;
+            graphics.fill(ControlP5Constants.WHITE);
+            graphics.text(name + " v" + firmwareVersion + "." + version, x, y);
+        }
+
+        private void showConnected(PGraphics graphics, boolean connected, int x, int y) {
+
+            graphics.noStroke();
+            if (connected) {
+                graphics.fill(0, 255, 0);
+            } else {
+                graphics.fill(255, 0, 0);
+            }
+
+            graphics.rect(x, y, 10, 10);
+        }
+
+        private void showMemory(PGraphics graphics, String audiomem, int x, int y) {
+            graphics.textFont(BitFontStandard56);
+            graphics.fill(ControlP5Constants.WHITE);
+            graphics.text(audiomem, x, y);
+        }
 
 
-    void showCPU(String cpu, int x, int y) {
-        graphics.noStroke();
-        graphics.fill(0,45,90);
-        graphics.rect(x + 60,y,100,20);
-        graphics.fill(0,116,217);
-        graphics.rect(x + 60,y,parseInt(cpu),20);
-        graphics.fill(ControlP5Constants.WHITE);
-        graphics.text("CPU " + cpu + "%",x, y + 15);
+        void showCPU(PGraphics graphics, String cpu, int x, int y) {
+            graphics.fill(ControlP5Constants.WHITE);
+            graphics.text("CPU " + cpu + "%", x, y);
+        }
+
     }
 }

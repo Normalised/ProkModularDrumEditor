@@ -1,4 +1,5 @@
 Manifest-Version: 1.0
-Class-Path: log4j-1.2.17.jar slf4j-api-1.7.2.jar
- slf4j-log4j12-1.7.2.jar
+Class-Path: slf4j-api-1.7.2.jar slf4j-log4j12-1.7.2.jar log4j-1.2.17.j
+ ar core.jar jssc.jar
 Main-Class: com.korisnamedia.thonk.ThonkModularApp
+

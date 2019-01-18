@@ -20,10 +20,6 @@ public class QuadUI extends Controller<QuadUI> {
         this.state = state;
     }
 
-    protected void onEnter() {
-//        println("enter");
-    }
-
     private class BankUIView implements ControllerView<QuadUI> {
 
         public void display( PGraphics graphics , QuadUI theController ) {

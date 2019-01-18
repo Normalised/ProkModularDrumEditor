@@ -1,5 +1,6 @@
 package com.korisnamedia.thonk.ui;
 
+import com.korisnamedia.thonk.ConfigKeys;
 import com.korisnamedia.thonk.Metronome;
 import com.korisnamedia.thonk.ThonkModularApp;
 import com.prokmodular.ModuleInfo;
@@ -8,7 +9,11 @@ import com.prokmodular.files.ModelExporter;
 import com.prokmodular.model.ModelParamListener;
 import com.prokmodular.model.ParameterMapping;
 import com.prokmodular.model.Preset;
+import controlP5.Button;
+import controlP5.Slider;
+import controlP5.Toggle;
 import org.slf4j.Logger;
+import processing.data.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -23,25 +28,30 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class ModuleEditorView implements ModelParamListener {
 
     final Logger logger = getLogger(ModuleEditorView.class);
+    public static final int METRONOME_ID = 101;
     private final ThonkModularApp app;
 
-    public ModuleSerialConnection moduleSerialConnection;
     private float morphX = -1;
     private float morphY = -1;
 
     private Metronome metronome;
     private ControlPanel controlPanel;
-    private PresetManagerView presetManagerView;
+    private MorphAndStorage morphAndStorage;
+    private PresetManagerUI presetManagerUI;
 
     private ModelExporter modelExporter;
     private Map<Integer, Float> paramCache;
 
-    private boolean uiCreated = false;
-    private Map<String, String> moduleState;
-
     private ModuleInfo currentModule;
     ArrayList<ParameterMapping> parameters;
     public UIControls ui;
+    private boolean devMode = true;
+    private Button generateHeaderButton;
+    private Button saveBankButton;
+    private Toggle exclusiveToggle;
+    private Toggle metroToggle;
+    private Slider metroSlider;
+    private boolean settingUpModule = false;
 
     public ModuleEditorView(ThonkModularApp thonkModularApp) {
         app = thonkModularApp;
@@ -49,15 +59,87 @@ public class ModuleEditorView implements ModelParamListener {
 
         parameters = new ArrayList<>();
 
-        moduleState = new HashMap<>();
+        ui = new UIControls(this, app.cp5);
+        ui.setPosition(450,10);
+        ui.createNoteControls();
 
-        moduleState.put(Messages.CPU, "0");
-        moduleState.put(Messages.AUDIO_MEMORY, "0");
-        moduleState.put(Messages.BLOCK_SIZE,"0");
-        moduleState.put(Messages.VERSION, "0");
-        moduleState.put(Messages.NAME, "");
+        modelExporter = new ModelExporter();
+        metronome = new Metronome();
 
+        controlPanel = new ControlPanel(app.cp5, "editorControlPanel");
+        controlPanel.setSize(300,24);
+        controlPanel.setPosition(getWidth() - 300,getHeight() - 24);
 
+        morphAndStorage = new MorphAndStorage(app.cp5, this);
+        morphAndStorage.setPosition(220,21);
+        morphAndStorage.createUI();
+
+        presetManagerUI = new PresetManagerUI(app.cp5, this);
+        presetManagerUI.setPosition(10,10);
+        presetManagerUI.createUI();
+
+        createToolsButtons();
+        createMetronomeControls();
+    }
+
+    public void edit(ModuleInfo module) {
+
+        settingUpModule = true;
+
+        parameters.clear();
+
+        if(currentModule != null && currentModule.connection != null) {
+            currentModule.connection.removeModelParamListener(this);
+        }
+        currentModule = module;
+        currentModule.connection.addModelParamListener(this);
+
+        ui.setModule(module);
+
+        metronome.setConnection(currentModule.connection);
+        modelExporter.setConnection(currentModule.connection);
+
+        presetManagerUI.setModule(currentModule);
+        controlPanel.setModule(module);
+        morphAndStorage.setModule(module);
+
+        if(!paramCache.isEmpty()) {
+            logger.debug("Param Cache has data.");
+            for(Map.Entry<Integer, Float> item : paramCache.entrySet()) {
+                setCurrentParam(new ParamMessage(item.getKey(), item.getValue()));
+            }
+
+            paramCache.clear();
+        }
+
+        controlPanel.show();
+        morphAndStorage.show();
+        presetManagerUI.show();
+        generateHeaderButton.show();
+        saveBankButton.show();
+        exclusiveToggle.show();
+        metroToggle.show();
+        metroSlider.show();
+        ui.show();
+
+        getCurrentParams();
+        settingUpModule = false;
+    }
+
+    public void close() {
+        //metronome.stop();
+        controlPanel.hide();
+        morphAndStorage.hide();
+        presetManagerUI.hide();
+        generateHeaderButton.hide();
+        saveBankButton.hide();
+        exclusiveToggle.hide();
+        metroToggle.hide();
+        metroSlider.hide();
+        metroToggle.setValue(false);
+        //metronome.on(false);
+        ui.hide();
+        ui.clear();
     }
 
     public int getWidth() {
@@ -69,7 +151,10 @@ public class ModuleEditorView implements ModelParamListener {
     }
 
     public void keyPressed(char key) {
-        if (key == 32) moduleSerialConnection.sendCommand(new CommandContents(TRIGGER, ""));
+        if (key == 32) {
+            logger.debug("Sending trigger to " + currentModule.type);
+            currentModule.connection.sendCommand(new CommandContents(TRIGGER, ""));
+        }
     }
 
     @Override
@@ -77,67 +162,56 @@ public class ModuleEditorView implements ModelParamListener {
 
     }
 
-    public void close() {
-        metronome.stop();
-    }
-
-    public void edit(ModuleInfo module) {
-        if(ui == null) {
-            ui = new UIControls(this, app.cp5);
-        }
-
-        if(moduleSerialConnection != null) {
-            moduleSerialConnection.removeModelParamListener(this);
-        }
-        moduleSerialConnection = new ModuleSerialConnection(module.port);
-        moduleState.clear();
-        moduleSerialConnection.addModelParamListener(this);
-        modelExporter = new ModelExporter(moduleSerialConnection);
-        metronome = new Metronome(moduleSerialConnection);
-
-        currentModule = module;
-        module.ui.createUI(ui, module.getVersion());
-        if(currentModule.ui instanceof UIForProcessing) {
-            ((UIForProcessing) currentModule.ui).createExtraUI(app.cp5);
-        }
-
-    }
-
-    private void createMainUI() {
-
-        logger.debug("Creating main UI");
-        uiCreated = true;
-        ui.create();
-
-        // Create the appropriate UI
-        if (controlPanel == null) {
-            controlPanel = new ControlPanel(app.getGraphics(), app.cp5, this);
-            controlPanel.createDefaultControls(moduleState);
-        }
-
-        if(presetManagerView == null) {
-            presetManagerView = new PresetManagerView(app.getGraphics(), app.cp5, this);
-            presetManagerView.createUI();
-        }
-        presetManagerView.setCurrentModel(currentModule.model, getModelDirectory());
-        metronome.start();
-
-        if(!paramCache.isEmpty()) {
-            for(Map.Entry<Integer, Float> item : paramCache.entrySet()) {
-                setCurrentParam(new ParamMessage(item.getKey(), item.getValue()));
-            }
-
-            paramCache.clear();
-        }
-    }
-
     public void clear() {
-        moduleSerialConnection.sendCommand(new CommandContents(CLEAR, ""));
+        currentModule.connection.sendCommand(new CommandContents(CLEAR, ""));
     }
 
-    public void update() {
-        moduleSerialConnection.update();
-        controlPanel.showStatus(moduleSerialConnection.connected, moduleState);
+    private void createToolsButtons() {
+        int buttonsX = 220;
+
+        if(devMode) {
+            generateHeaderButton = app.cp5.addButton("Generate Header").setPosition(buttonsX,10).setSize(95,20).onRelease(theEvent -> {
+                generateHeader();
+            });
+
+            saveBankButton = app.cp5.addButton("Save Bank").setPosition(buttonsX + 105,10).setSize(95,20).onRelease(theEvent -> {
+                saveModelsLocally();
+            });
+        } else {
+            saveBankButton = app.cp5.addButton("Save Bank").setPosition(buttonsX + 55,10).setSize(95,20).onRelease(theEvent -> {
+                saveModelsLocally();
+            });
+
+        }
+
+        exclusiveToggle = app.cp5.addToggle("Exclusive")
+                .setPosition(300, app.getHeight() - 24)
+                .setSize(20,20)
+                .onChange(theEvent -> {
+                    boolean on = theEvent.getController().getValue() > 0;
+                    setExclusive(on);
+                }).setValue(false);
+
+        app.cp5.addTextlabel( "IgnoreCV", "Ignore CV", 322, app.getHeight() - 19);
+    }
+
+    private void createMetronomeControls() {
+        int y = app.getHeight() - 24;
+
+        metroToggle = app.cp5.addToggle("Metro")
+                .setPosition(10, y)
+                .setSize(20,20)
+                .setLabelVisible(false)
+                .onChange(theEvent -> {
+                    boolean on = theEvent.getController().getValue() > 0;
+                    useMetronome(on);
+                }).setValue(false);
+
+        metroSlider = ui.addLocalSlider("Tempo", 10, 400, METRONOME_ID + 1).setPosition(32, y).setSize(178,20);
+        metroSlider.setValue(120.0f);
+        metroSlider.onChange(theEvent -> {
+           metronome.setBPM(metroSlider.getValue());
+        });
     }
 
     public void useMetronome(boolean on) {
@@ -162,31 +236,25 @@ public class ModuleEditorView implements ModelParamListener {
     }
 
     public void getCurrentParams() {
-        moduleSerialConnection.sendCommand(new CommandContents(Commands.SEND_PARAMS, Commands.INDEX_FOR_CURRENT_MODEL));
+        currentModule.connection.sendCommand(new CommandContents(Commands.SEND_PARAMS, Commands.INDEX_FOR_CURRENT_MODEL));
     }
 
     public void saveModel(int index) {
-        moduleSerialConnection.sendCommand(new CommandContents(Commands.SAVE, String.valueOf(index)));
+        currentModule.connection.sendCommand(new CommandContents(Commands.SAVE, String.valueOf(index)));
     }
 
     public void selectModel(int index) {
-        moduleSerialConnection.sendCommand(new CommandContents(Commands.SELECT_MODEL, String.valueOf(index)));
+        currentModule.connection.sendCommand(new CommandContents(Commands.SELECT_MODEL, String.valueOf(index)));
     }
 
     public void clearQuad(int index) {
-        moduleSerialConnection.sendCommand(new CommandContents(Commands.CLEAR_QUAD, String.valueOf(index)));
+        currentModule.connection.sendCommand(new CommandContents(Commands.CLEAR_QUAD, String.valueOf(index)));
     }
 
     public void setExclusive(boolean on) {
-        moduleSerialConnection.sendCommand(new CommandContents(Commands.EXCLUSIVE, on ? "1" : "0"));
-    }
-
-    public File getModelDirectory() {
-        File modelDir = new File(app.getDataDirectory(), currentModule.getFilename());
-        if(!modelDir.exists()) {
-            modelDir.mkdirs();
+        if(currentModule != null) {
+            currentModule.connection.sendCommand(new CommandContents(Commands.EXCLUSIVE, on ? "1" : "0"));
         }
-        return modelDir;
     }
 
     public Preset getPreset() {
@@ -198,13 +266,15 @@ public class ModuleEditorView implements ModelParamListener {
     }
 
     public void setMorph(float newX, float newY) {
+        if(currentModule == null) return;
+
         if (newX != morphX) {
             morphX = newX;
-            moduleSerialConnection.sendCommand(new CommandContents(MORPH_X, Float.toString(morphX)));
+            currentModule.connection.sendCommand(new CommandContents(MORPH_X, Float.toString(morphX)));
         }
         if (newY != morphY) {
             morphY = newY;
-            moduleSerialConnection.sendCommand(new CommandContents(MORPH_Y, Float.toString(morphY)));
+            currentModule.connection.sendCommand(new CommandContents(MORPH_Y, Float.toString(morphY)));
         }
     }
 
@@ -213,17 +283,13 @@ public class ModuleEditorView implements ModelParamListener {
     }
 
     public void addParameter(ParameterMapping mapping) {
+        //logger.debug("Add Parameter Mapping " + parameters.size());
         parameters.add(mapping);
     }
 
     public void setCurrentParam(ParamMessage msg) {
         if (parameters.size() == 0) {
-            if(!uiCreated) {
-                // cache params until ui is created
-                paramCache.put(msg.id, msg.value);
-            } else {
-                logger.debug("Parameters are empty, cant set current param for ID " + msg.id + " to " + msg.value);
-            }
+            paramCache.put(msg.id, msg.value);
             return;
         }
         ParameterMapping mapping = parameters.get(msg.id);
@@ -231,9 +297,12 @@ public class ModuleEditorView implements ModelParamListener {
     }
 
     public void handleControlEvent(int paramID, float val) {
+        if(settingUpModule) return;
+
+//        logger.debug("Handle Control Event " + paramID + " : " + val + " : " + parameters.size());
         if (paramID >= parameters.size()) return;
         ParameterMapping mapping = parameters.get(paramID);
-        moduleSerialConnection.sendCurrentParam(new ParamMessage(paramID, mapping.toModule(val)));
+        currentModule.connection.sendCurrentParam(new ParamMessage(paramID, mapping.toModule(val)));
     }
 
     public void applyPreset(Preset p) {
@@ -259,5 +328,9 @@ public class ModuleEditorView implements ModelParamListener {
 
     public File getDataDirectory() {
         return app.getDataDirectory();
+    }
+
+    public JSONObject getConfig() {
+        return app.getConfig();
     }
 }

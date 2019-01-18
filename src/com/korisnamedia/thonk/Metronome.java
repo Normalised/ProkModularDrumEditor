@@ -3,11 +3,13 @@ package com.korisnamedia.thonk;
 import com.prokmodular.comms.CommandContents;
 import com.prokmodular.comms.Commands;
 import com.prokmodular.comms.ModuleSerialConnection;
+import org.slf4j.Logger;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
 import static java.lang.Math.round;
+import static org.slf4j.LoggerFactory.getLogger;
 
 class MetronomeTask extends TimerTask {
 
@@ -25,15 +27,16 @@ class MetronomeTask extends TimerTask {
 
 public class Metronome {
 
-    private final ModuleSerialConnection comms;
+    final Logger logger = getLogger(Metronome.class);
+
+    private ModuleSerialConnection connection;
     private final MetronomeTask timerTask;
-    private int interval;
+    private int interval = 500;
     private int count;
     private Timer metronomeTimer;
     private boolean active;
 
-    public Metronome(ModuleSerialConnection sc) {
-        comms = sc;
+    public Metronome() {
         timerTask = new MetronomeTask(this);
         active = false;
     }
@@ -54,18 +57,28 @@ public class Metronome {
 
         if(count >= interval) {
             count = 0;
-            comms.sendCommand(new CommandContents(Commands.TRIGGER, ""));
+            if(connection != null) {
+                connection.sendCommand(new CommandContents(Commands.TRIGGER, ""));
+            }
         }
     }
 
 
     public void on(boolean active) {
+        logger.debug("Metronome active " + active);
         this.active = active;
+        if(active && metronomeTimer == null) {
+            start();
+        }
     }
 
     public void stop() {
         if(metronomeTimer != null) {
             metronomeTimer.cancel();
         }
+    }
+
+    public void setConnection(ModuleSerialConnection connectionToUse) {
+        connection = connectionToUse;
     }
 }

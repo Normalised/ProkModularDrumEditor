@@ -9,9 +9,11 @@ import controlP5.*;
 import org.slf4j.Logger;
 import processing.core.PApplet;
 import processing.core.PImage;
+import processing.data.JSONObject;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -26,31 +28,35 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
     }
     public ControlP5 cp5;
 
-
     private ModuleInfo currentModule;
-
 
     private PImage logoTiny;
     private PImage logoBig;
 
-    //private Map<String, ProkModel> models;
     private Map<String, ModelUI> uis;
 
+    private JSONObject config;
+    private File configFile;
     private File prokDir;
 
     public static int width = 1450;
     public static int height = 800;
-    private String unknownModelName = "";
 
     private ModuleScanner moduleScanner;
 
     private AppState appState = AppState.SCANNING;
 
     private ModuleEditorView editorView;
+    private ModuleSelectorView selectorView;
 
     public void settings() {
 
+        File homeDir = new File(System.getProperty("user.home"));
+        prokDir = new File(homeDir, "prokDrums");
+        configFile = new File(getDataDirectory(), "editorConfig.json");
+
         logger.debug("settings()");
+
         moduleScanner = new ModuleScanner();
         moduleScanner.addScanStatusListener(this);
 
@@ -63,7 +69,40 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
 
         size(width, height);
 
+        loadConfig();
+    }
 
+    public void setup() {
+
+        prepareExitHandler();
+        logger.debug("Setup");
+        logoBig = loadImage("img/Logo_WhiteOnBlack.png");
+        logoTiny = loadImage("img/Logo_WhiteOnBlack_Tiny.png");
+
+        surface.setTitle("Prok Modular Control");
+
+        noStroke();
+        cp5 = new ControlP5(this);
+        cp5.enableShortcuts();
+        cp5.setColor(ControlP5Constants.THEME_RETRO);
+
+        selectorView = new ModuleSelectorView(getGraphics(), cp5, this);
+
+        moduleScanner.scan();
+    }
+
+    private void loadConfig() {
+        if(configFile.exists()) {
+            config = loadJSONObject(configFile);
+            logger.debug("Loaded config from file");
+        } else {
+            config = new JSONObject();
+            config.setString(ConfigKeys.PRESET_FOLDER,new File(prokDir, "patches").getAbsolutePath());
+        }
+    }
+
+    public JSONObject getConfig() {
+        return config;
     }
 
     private void addModel(ProkModel model, ModelUI ui) {
@@ -72,30 +111,35 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
     }
 
     public void keyPressed() {
-        editorView.keyPressed(key);
+        if(editorView != null) {
+            editorView.keyPressed(key);
+        }
     }
 
-    public void setup() {
-
-        logger.debug("Setup");
-        logoBig = loadImage("img/Logo_WhiteOnBlack.png");
-        logoTiny = loadImage("img/Logo_WhiteOnBlack_Tiny.png");
-
-        File homeDir = new File(System.getProperty("user.home"));
-        prokDir = new File(homeDir, "prokDrums");
-
-        surface.setTitle("Prok Modular Control");
-
-        noStroke();
-        cp5 = new ControlP5(this);
-        cp5.setColor(ControlP5Constants.THEME_RETRO);
-
-        moduleScanner.scan();
+    private void prepareExitHandler() {
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            public void run() {
+                try {
+                    shutdown();
+                    stop();
+                } catch (Exception ex) {
+                    ex.printStackTrace(); // not much else to do at this point
+                }
+            }
+        }));
     }
 
-    public void editorClosed() {
+    private void shutdown() {
+        logger.debug("Shutdown");
+
+        saveJSONObject(config, configFile.getAbsolutePath());
+    }
+
+    public void closeEditor() {
         editorView.close();
         currentModule = null;
+        appState = AppState.MODULE_SELECT;
+        selectorView.show();
     }
 
     @Override
@@ -109,6 +153,8 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
 
     private void showModuleSelect(List<ModuleInfo> modules) {
         logger.debug("Show Module select for " + modules.size() + " modules");
+        appState = AppState.MODULE_SELECT;
+        selectorView.showAvailableModules(modules);
     }
 
     public void moduleSelected(ModuleInfo module) {
@@ -122,7 +168,8 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
             currentModule.ui = uis.get(currentModule.type);
         }
         editorView.edit(currentModule);
-
+        selectorView.hide();
+        appState = AppState.MODULE_EDIT;
     }
 
     public void draw() {
@@ -134,9 +181,8 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
         if(appState == AppState.SCANNING) {
             showSerialStatus();
         } else if(appState == AppState.MODULE_SELECT) {
-
+            selectorView.draw();
         } else if(appState == AppState.MODULE_EDIT) {
-            editorView.update();
             stroke(0xFF777777);
             line(0, height - 30, width, height - 30);
         } else if(appState == AppState.NO_MODULES_AVAILABLE) {
@@ -158,11 +204,23 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
     }
 
     private void drawLogo() {
-        if(currentModule != null) {
-            // 584, 262
-            image(logoTiny, (width / 2) - 29, height - 26, 50, 21);
-        } else {
+        if(appState == AppState.SCANNING) {
             image(logoBig, (width - logoBig.width) / 2, (height - logoBig.height) / 2);
+        } else {
+            image(logoTiny, (width - logoTiny.width) / 2 , height - 26, 50, 21);
+        }
+    }
+
+    @Override
+    public void mousePressed() {
+
+        int logoLeft = (width - logoTiny.width) / 2;
+        int logoTop = height - 26;
+
+        if(mouseX >= logoLeft && mouseX <= logoLeft + 50 && mouseY >= logoTop && mouseY <= logoTop + 21) {
+            if(appState == AppState.MODULE_EDIT) {
+                closeEditor();
+            }
         }
     }
 

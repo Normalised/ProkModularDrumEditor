@@ -4,6 +4,7 @@ import com.prokmodular.ui.ModelUIBuilder;
 import com.prokmodular.model.ModelConfig;
 import com.prokmodular.model.ModelUI;
 import com.prokmodular.model.ProkModel;
+import controlP5.Button;
 import controlP5.CallbackEvent;
 import controlP5.ControlP5;
 import controlP5.Slider;
@@ -21,6 +22,8 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
     private final ArrayList<Slider> gainSliders;
 
     private List<Float> frequencyBuffer;
+    private Button copyFrqButton;
+    private Button pasteFrqButton;
 
     public HiHatUIForProcessing() {
         freqSliders = new ArrayList<>();
@@ -83,7 +86,7 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
     }
 
     @Override
-    public void createUI(ModelUIBuilder ui, int version) {
+    public void createUI(ModelUIBuilder ui, int firmwareVersion, int version) {
 
         //ui.addKnob("Base Freq", 0, 1000);
         ui.addSlider("Base Freq", 0, 1000);
@@ -134,18 +137,18 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
         ui.addSlider("Decay Low", createSquared(0, 100, 1, 16000));
         ui.addSlider("Low Extend", createLinear(0, 100, 0, 32000));
         if(version > 5) {
-            ui.addIntSlider("Low Extend Factor", 1,64);
+            ui.addIntSlider("Low Extend Factor", -8,64);
         }
         ui.addSlider("Decay Mid", createSquared(0, 100, 1, 16000));
         ui.addSlider("Mid Extend", createLinear(0, 100, 0, 32000));
         if(version > 5) {
-            ui.addIntSlider("Mid Extend Factor", 1,64);
+            ui.addIntSlider("Mid Extend Factor", -8,64);
         }
 
         ui.addSlider("Decay High", createSquared(0, 100, 1, 16000));
         ui.addSlider("High Extend", createLinear(0, 100, 0, 32000));
         if(version > 5) {
-            ui.addIntSlider("High Extend Factor", 1,64);
+            ui.addIntSlider("High Extend Factor", -8,64);
         }
 
         ui.addSpace();
@@ -154,7 +157,7 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
         ui.addSlider("Decay Noise", createSquared(0, 100, 1, 8000));
         ui.addSlider("Noise Extend", createLinear(0, 100, 0, 32000));
         if(version > 5) {
-            ui.addIntSlider("Noise Extend Factor", 1,64);
+            ui.addIntSlider("Noise Extend Factor", -8,64);
         }
 
         ui.nextColumn();
@@ -181,7 +184,7 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
     }
 
     public void createExtraUI(ControlP5 cp5) {
-        cp5.addButton("CopyFrqs")
+        copyFrqButton = cp5.addButton("CopyFrqs")
                 .setValue(0)
                 .setSize(50, 20)
                 .setLabel("Copy Frqs")
@@ -191,7 +194,7 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
                     copyFrequencies();
                 });
 
-        cp5.addButton("PasteFrqs")
+        pasteFrqButton = cp5.addButton("PasteFrqs")
                 .setValue(0)
                 .setSize(50, 20)
                 .setLabel("Paste Frqs")
@@ -200,5 +203,10 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
                 .onRelease((CallbackEvent theEvent) -> {
                     pasteFrequencies();
                 });
+    }
+
+    public void removeExtraUI(ControlP5 cp5) {
+        cp5.remove("CopyFrqs");
+        cp5.remove("PasteFrqs");
     }
 }

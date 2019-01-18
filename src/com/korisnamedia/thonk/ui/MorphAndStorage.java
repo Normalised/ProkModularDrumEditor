@@ -1,27 +1,23 @@
 package com.korisnamedia.thonk.ui;
 
-import com.korisnamedia.thonk.ThonkModularApp;
+import com.prokmodular.ModuleInfo;
+import com.prokmodular.comms.CommandContents;
 import com.prokmodular.comms.Messages;
-import com.prokmodular.comms.Serial;
+import com.prokmodular.comms.ModuleCommandListener;
 import com.prokmodular.comms.ModuleConnectionListener;
-import controlP5.Button;
-import controlP5.CallbackEvent;
-import controlP5.ControlP5;
-import controlP5.Slider2D;
+import controlP5.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import processing.core.PGraphics;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import static com.korisnamedia.thonk.ui.ControlPanel.MORPH_ID;
 
-public class MorphAndStorage implements ModuleConnectionListener {
+public class MorphAndStorage implements ModuleCommandListener {
 
     final Logger logger = LoggerFactory.getLogger(MorphAndStorage.class);
-    private final PGraphics graphics;
     private final ControlP5 cp5;
     private final ModuleEditorView app;
     private ArrayList<QuadUI> quads;
@@ -30,15 +26,14 @@ public class MorphAndStorage implements ModuleConnectionListener {
     private int blockWidth;
     private boolean saveMode = false;
     private Button saveButton;
-    private int x;
-    private int y;
 
-    private Layout layout;
+    private ModuleInfo currentModule;
+    private int x = 0;
+    private int y = 40;
+    private ArrayList<Button> clearButtons;
 
-    public MorphAndStorage(PGraphics graphics, ControlP5 cp5, ModuleEditorView view) {
+    public MorphAndStorage(ControlP5 cp5, ModuleEditorView view) {
 
-        layout = new Layout();
-        this.graphics = graphics;
         this.cp5 = cp5;
         this.app = view;
         blockHeight = 108;
@@ -46,13 +41,21 @@ public class MorphAndStorage implements ModuleConnectionListener {
 
         logger.debug("Create MorphAndStorage");
         quads = new ArrayList<>();
+        clearButtons = new ArrayList<>();
 
-        app.moduleSerialConnection.addSerialCommsListener(this);
     }
 
-    public void create(int x, int y) {
-        this.x = x;
-        this.y = y;
+    public void setModule(ModuleInfo module) {
+        if(currentModule != null) {
+            currentModule.connection.removeModuleCommandListener(this);
+        }
+        currentModule = module;
+        currentModule.connection.addModuleCommandListener(this);
+        setQuadState(currentModule.getProperty(Messages.QUAD_STATE));
+        setSelectedQuad(currentModule.getProperty(Messages.QUAD_SELECT_INDEX));
+    }
+
+    public void createUI() {
         addMorph();
         addQuads();
     }
@@ -60,8 +63,8 @@ public class MorphAndStorage implements ModuleConnectionListener {
     private void addQuads() {
         // 4 x 4 squares
 
-        int quadX = 16 + x;
-        int quadY = 240 + y;
+        int quadX = (int) (16 + x);
+        int quadY = (int) (240 + y);
 
         saveButton = cp5.addButton("Save To");
         saveButton.setValue(0)
@@ -91,7 +94,7 @@ public class MorphAndStorage implements ModuleConnectionListener {
 
                         quadClicked(index, mx, my);
                     });
-            cp5.addButton("Clear" + i)
+            Button clearButton = cp5.addButton("Clear" + i)
                     .setValue(0)
                     .setSize(40, 20)
                     .setLabel("Clear")
@@ -101,6 +104,7 @@ public class MorphAndStorage implements ModuleConnectionListener {
                         clearQuad(index);
                     });
 
+            clearButtons.add(clearButton);
 //            cp5.addButton("Save"+i)
 //                    .setValue(0)
 //                    .setSize(40, 20)
@@ -139,11 +143,9 @@ public class MorphAndStorage implements ModuleConnectionListener {
         logger.debug("Quad Clicked " + row + ", " + col + ". Index " + index + ". Item Index " + itemIndex);
 
         if(saveMode) {
-//            logger.debug("Saving current to " + index + " : " + itemIndex);
             app.saveModel((index * 4) + itemIndex);
             exitSaveMode();
         } else {
-//            logger.debug("Selecting model " + index + " : " + itemIndex);
             app.selectModel((index * 4) + itemIndex);
 
             morphControl.setValue(col * 1024, (1 - row) * 1024);
@@ -164,7 +166,7 @@ public class MorphAndStorage implements ModuleConnectionListener {
         morphControl = cp5.addSlider2D("morph");
 
         morphControl.setId(MORPH_ID + 1)
-                .setPosition(layout.topMargin + x , layout.topMargin + y)
+                .setPosition(x , y + 20)
                 .setSize(200, 200)
                 .setMinMax(0, 1024, 1024, 0)
                 .setValue(0, 0)
@@ -180,41 +182,20 @@ public class MorphAndStorage implements ModuleConnectionListener {
 
     }
 
-    private void createQuickSaveButtons() {
-    }
-
     @Override
-    public void connected(String type) {
-        // dont care
-    }
-
-    @Override
-    public void disconnected() {
-
-    }
-
-    @Override
-    public void onData(String propName, String propValue) {
-        if (propName.equalsIgnoreCase(Messages.QUAD_STATE)) {
-            setQuadState(propValue);
-        } else if (propName.equalsIgnoreCase(Messages.QUAD_SELECT_INDEX)) {
-            setSelectedQuad(propValue);
+    public void onCommand(CommandContents command) {
+        if (command.is(Messages.QUAD_STATE)) {
+            setQuadState(command.data);
+        } else if (command.is(Messages.QUAD_SELECT_INDEX)) {
+            setSelectedQuad(command.data);
         }
-
-//        else if(propName.equalsIgnoreCase("morph")) {
-//            String[] parts = propValue.split(",");
-//            if(parts.length == 2) {
-//                float x = Float.parseFloat(parts[0]);
-//                float y = Float.parseFloat(parts[1]);
-//                morphControl.setBroadcast(false);
-//                morphControl.setValue(x,y);
-//                morphControl.setBroadcast(true);
-//            }
-//        }
     }
 
     private void setSelectedQuad(String quadIndex) {
         if(quadIndex == null) return;
+        if(quads.size() == 0) return;
+
+        logger.debug("Set selected quad " + quadIndex);
         int bankIndex = Integer.parseInt(quadIndex);
         for (int i = 0; i < 4; i++) {
             quads.get(i).setSelected(i == bankIndex);
@@ -224,7 +205,9 @@ public class MorphAndStorage implements ModuleConnectionListener {
     private void setQuadState(String quadState) {
         if(quadState == null) return;
 
-        logger.debug("MorphAndStorage:: quad state " + quadState);
+        if(quads.size() == 0) return;
+
+        logger.debug("Set quad state " + quadState);
         int bankState = Integer.parseInt(quadState);
         for (int i = 0; i < 4; i++) {
             // Mask off bottom 4 bits
@@ -234,12 +217,26 @@ public class MorphAndStorage implements ModuleConnectionListener {
         }
     }
 
-    public void setState(Map<String, String> moduleState) {
-        if(moduleState.containsKey(Messages.QUAD_STATE)) {
-            setQuadState(moduleState.get(Messages.QUAD_STATE));
+    public void hide() {
+        saveButton.hide();
+        morphControl.hide();
+        for (int i = 0; i < 4; i++) {
+            quads.get(i).hide();
+            clearButtons.get(i).hide();
         }
-        if(moduleState.containsKey(Messages.QUAD_SELECT_INDEX)) {
-            setSelectedQuad(moduleState.get(Messages.QUAD_SELECT_INDEX));
+    }
+
+    public void show() {
+        saveButton.show();
+        morphControl.show();
+        for (int i = 0; i < 4; i++) {
+            quads.get(i).show();
+            clearButtons.get(i).show();
         }
+    }
+
+    public void setPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 }
