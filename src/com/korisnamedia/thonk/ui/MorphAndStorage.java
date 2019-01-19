@@ -1,17 +1,14 @@
 package com.korisnamedia.thonk.ui;
 
-import com.prokmodular.ModuleInfo;
+import com.prokmodular.ProkModule;
 import com.prokmodular.comms.CommandContents;
 import com.prokmodular.comms.Messages;
 import com.prokmodular.comms.ModuleCommandListener;
-import com.prokmodular.comms.ModuleConnectionListener;
 import controlP5.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import processing.core.PGraphics;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 import static com.korisnamedia.thonk.ui.ControlPanel.MORPH_ID;
 
@@ -27,7 +24,7 @@ public class MorphAndStorage implements ModuleCommandListener {
     private boolean saveMode = false;
     private Button saveButton;
 
-    private ModuleInfo currentModule;
+    private ProkModule currentModule;
     private int x = 0;
     private int y = 40;
     private ArrayList<Button> clearButtons;
@@ -45,12 +42,12 @@ public class MorphAndStorage implements ModuleCommandListener {
 
     }
 
-    public void setModule(ModuleInfo module) {
+    public void setModule(ProkModule module) {
         if(currentModule != null) {
-            currentModule.connection.removeModuleCommandListener(this);
+            currentModule.removeCommandListener(this);
         }
         currentModule = module;
-        currentModule.connection.addModuleCommandListener(this);
+        currentModule.addCommandListener(this);
         setQuadState(currentModule.getProperty(Messages.QUAD_STATE));
         setSelectedQuad(currentModule.getProperty(Messages.QUAD_SELECT_INDEX));
     }

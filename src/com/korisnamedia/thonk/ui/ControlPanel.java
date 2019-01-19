@@ -1,6 +1,6 @@
 package com.korisnamedia.thonk.ui;
 
-import com.prokmodular.ModuleInfo;
+import com.prokmodular.ProkModule;
 import com.prokmodular.comms.Messages;
 import controlP5.ControlP5;
 import controlP5.ControlP5Constants;
@@ -25,7 +25,7 @@ public class ControlPanel extends Controller<ControlPanel> {
 
     private HashMap<String, String> nameMap;
 
-    private ModuleInfo currentModule;
+    private ProkModule currentModule;
     private boolean verticalLayout = false;
     public boolean canMoveLeft = false;
     public boolean canMoveRight = false;
@@ -48,11 +48,11 @@ public class ControlPanel extends Controller<ControlPanel> {
         setView(controlPanelView);
     }
 
-    public void setModule(ModuleInfo module) {
+    public void setModule(ProkModule module) {
         currentModule = module;
     }
 
-    public ModuleInfo getModule() {
+    public ProkModule getModule() {
         return currentModule;
     }
 

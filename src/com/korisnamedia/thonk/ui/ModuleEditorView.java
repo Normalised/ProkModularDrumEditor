@@ -1,9 +1,8 @@
 package com.korisnamedia.thonk.ui;
 
-import com.korisnamedia.thonk.ConfigKeys;
 import com.korisnamedia.thonk.Metronome;
 import com.korisnamedia.thonk.ThonkModularApp;
-import com.prokmodular.ModuleInfo;
+import com.prokmodular.ProkModule;
 import com.prokmodular.comms.*;
 import com.prokmodular.files.ModelExporter;
 import com.prokmodular.model.ModelParamListener;
@@ -11,6 +10,7 @@ import com.prokmodular.model.ParameterMapping;
 import com.prokmodular.model.Preset;
 import controlP5.Button;
 import controlP5.Slider;
+import controlP5.Textlabel;
 import controlP5.Toggle;
 import org.slf4j.Logger;
 import processing.data.JSONObject;
@@ -42,7 +42,7 @@ public class ModuleEditorView implements ModelParamListener {
     private ModelExporter modelExporter;
     private Map<Integer, Float> paramCache;
 
-    private ModuleInfo currentModule;
+    private ProkModule currentModule;
     ArrayList<ParameterMapping> parameters;
     public UIControls ui;
     private boolean devMode = true;
@@ -51,6 +51,8 @@ public class ModuleEditorView implements ModelParamListener {
     private Toggle exclusiveToggle;
     private Toggle metroToggle;
     private Slider metroSlider;
+    private Textlabel ignoreCVLabel;
+
     private boolean settingUpModule = false;
 
     public ModuleEditorView(ThonkModularApp thonkModularApp) {
@@ -82,22 +84,22 @@ public class ModuleEditorView implements ModelParamListener {
         createMetronomeControls();
     }
 
-    public void edit(ModuleInfo module) {
+    public void edit(ProkModule module) {
 
         settingUpModule = true;
 
         parameters.clear();
 
-        if(currentModule != null && currentModule.connection != null) {
-            currentModule.connection.removeModelParamListener(this);
+        if(currentModule != null) {
+            currentModule.removeParamListener(this);
         }
         currentModule = module;
-        currentModule.connection.addModelParamListener(this);
+        currentModule.addParamListener(this);
 
         ui.setModule(module);
 
-        metronome.setConnection(currentModule.connection);
-        modelExporter.setConnection(currentModule.connection);
+        metronome.setModule(currentModule);
+        modelExporter.setModule(currentModule);
 
         presetManagerUI.setModule(currentModule);
         controlPanel.setModule(module);
@@ -118,6 +120,7 @@ public class ModuleEditorView implements ModelParamListener {
         generateHeaderButton.show();
         saveBankButton.show();
         exclusiveToggle.show();
+        ignoreCVLabel.show();
         metroToggle.show();
         metroSlider.show();
         ui.show();
@@ -134,6 +137,8 @@ public class ModuleEditorView implements ModelParamListener {
         generateHeaderButton.hide();
         saveBankButton.hide();
         exclusiveToggle.hide();
+        ignoreCVLabel.hide();
+
         metroToggle.hide();
         metroSlider.hide();
         metroToggle.setValue(false);
@@ -153,7 +158,7 @@ public class ModuleEditorView implements ModelParamListener {
     public void keyPressed(char key) {
         if (key == 32) {
             logger.debug("Sending trigger to " + currentModule.type);
-            currentModule.connection.sendCommand(new CommandContents(TRIGGER, ""));
+            currentModule.trigger();
         }
     }
 
@@ -163,7 +168,7 @@ public class ModuleEditorView implements ModelParamListener {
     }
 
     public void clear() {
-        currentModule.connection.sendCommand(new CommandContents(CLEAR, ""));
+        currentModule.clearPatches();
     }
 
     private void createToolsButtons() {
@@ -187,12 +192,13 @@ public class ModuleEditorView implements ModelParamListener {
         exclusiveToggle = app.cp5.addToggle("Exclusive")
                 .setPosition(300, app.getHeight() - 24)
                 .setSize(20,20)
+                .setValue(false)
                 .onChange(theEvent -> {
                     boolean on = theEvent.getController().getValue() > 0;
                     setExclusive(on);
-                }).setValue(false);
+                });
 
-        app.cp5.addTextlabel( "IgnoreCV", "Ignore CV", 322, app.getHeight() - 19);
+        ignoreCVLabel = app.cp5.addTextlabel( "IgnoreCV", "Ignore CV", 322, app.getHeight() - 19);
     }
 
     private void createMetronomeControls() {
@@ -236,25 +242,23 @@ public class ModuleEditorView implements ModelParamListener {
     }
 
     public void getCurrentParams() {
-        currentModule.connection.sendCommand(new CommandContents(Commands.SEND_PARAMS, Commands.INDEX_FOR_CURRENT_MODEL));
+        currentModule.getCurrentParams();
     }
 
     public void saveModel(int index) {
-        currentModule.connection.sendCommand(new CommandContents(Commands.SAVE, String.valueOf(index)));
+        currentModule.saveModel(index);
     }
 
     public void selectModel(int index) {
-        currentModule.connection.sendCommand(new CommandContents(Commands.SELECT_MODEL, String.valueOf(index)));
+        currentModule.selectModel(index);
     }
 
     public void clearQuad(int index) {
-        currentModule.connection.sendCommand(new CommandContents(Commands.CLEAR_QUAD, String.valueOf(index)));
+        currentModule.clearQuad(index);
     }
 
     public void setExclusive(boolean on) {
-        if(currentModule != null) {
-            currentModule.connection.sendCommand(new CommandContents(Commands.EXCLUSIVE, on ? "1" : "0"));
-        }
+        currentModule.ignoreCV(on);
     }
 
     public Preset getPreset() {
@@ -270,11 +274,12 @@ public class ModuleEditorView implements ModelParamListener {
 
         if (newX != morphX) {
             morphX = newX;
-            currentModule.connection.sendCommand(new CommandContents(MORPH_X, Float.toString(morphX)));
+            currentModule.morphX(morphX);
+
         }
         if (newY != morphY) {
             morphY = newY;
-            currentModule.connection.sendCommand(new CommandContents(MORPH_Y, Float.toString(morphY)));
+            currentModule.morphY(morphY);
         }
     }
 
@@ -302,7 +307,8 @@ public class ModuleEditorView implements ModelParamListener {
 //        logger.debug("Handle Control Event " + paramID + " : " + val + " : " + parameters.size());
         if (paramID >= parameters.size()) return;
         ParameterMapping mapping = parameters.get(paramID);
-        currentModule.connection.sendCurrentParam(new ParamMessage(paramID, mapping.toModule(val)));
+        currentModule.setParam(new ParamMessage(paramID, mapping.toModule(val)));
+
     }
 
     public void applyPreset(Preset p) {

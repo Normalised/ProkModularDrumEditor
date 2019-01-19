@@ -1,5 +1,6 @@
 package com.korisnamedia.thonk;
 
+import com.prokmodular.ProkModule;
 import com.prokmodular.comms.CommandContents;
 import com.prokmodular.comms.Commands;
 import com.prokmodular.comms.ModuleSerialConnection;
@@ -29,7 +30,7 @@ public class Metronome {
 
     final Logger logger = getLogger(Metronome.class);
 
-    private ModuleSerialConnection connection;
+    private ProkModule module;
     private final MetronomeTask timerTask;
     private int interval = 500;
     private int count;
@@ -57,8 +58,8 @@ public class Metronome {
 
         if(count >= interval) {
             count = 0;
-            if(connection != null) {
-                connection.sendCommand(new CommandContents(Commands.TRIGGER, ""));
+            if(module != null) {
+                module.trigger();
             }
         }
     }
@@ -78,7 +79,7 @@ public class Metronome {
         }
     }
 
-    public void setConnection(ModuleSerialConnection connectionToUse) {
-        connection = connectionToUse;
+    public void setModule(ProkModule prokModule) {
+        module = prokModule;
     }
 }

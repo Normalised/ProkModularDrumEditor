@@ -1,8 +1,7 @@
 package com.korisnamedia.thonk.ui;
 
-import com.prokmodular.ModuleInfo;
+import com.prokmodular.ProkModule;
 import com.prokmodular.model.ParameterMapping;
-import com.korisnamedia.thonk.ThonkModularApp;
 import com.korisnamedia.thonk.tuning.NoteMapper;
 import com.prokmodular.ui.ModelUIBuilder;
 import controlP5.*;
@@ -40,7 +39,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     private Button setNoteButton;
     private Button doubleFreqButton;
     private Button halveFreqButton;
-    private ModuleInfo module;
+    private ProkModule module;
     private int firmwareVersion = 0;
 
     private int extendFactorMinimum = 1;
@@ -58,7 +57,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
         this.cp5.addListener(this);
     }
 
-    public void setModule(ModuleInfo moduleToUse) {
+    public void setModule(ProkModule moduleToUse) {
         clear();
 
         module = moduleToUse;

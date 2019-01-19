@@ -1,7 +1,7 @@
 package com.korisnamedia.thonk;
 
 import com.korisnamedia.thonk.ui.*;
-import com.prokmodular.ModuleInfo;
+import com.prokmodular.ProkModule;
 import com.prokmodular.comms.*;
 import com.prokmodular.drums.*;
 import com.prokmodular.model.*;
@@ -13,7 +13,6 @@ import processing.data.JSONObject;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +27,7 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
     }
     public ControlP5 cp5;
 
-    private ModuleInfo currentModule;
+    private ProkModule currentModule;
 
     private PImage logoTiny;
     private PImage logoBig;
@@ -143,7 +142,7 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
     }
 
     @Override
-    public void scanComplete(List<ModuleInfo> availableModules) {
+    public void scanComplete(List<ProkModule> availableModules) {
         if(!availableModules.isEmpty()) {
             showModuleSelect(availableModules);
         } else {
@@ -151,13 +150,13 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
         }
     }
 
-    private void showModuleSelect(List<ModuleInfo> modules) {
+    private void showModuleSelect(List<ProkModule> modules) {
         logger.debug("Show Module select for " + modules.size() + " modules");
         appState = AppState.MODULE_SELECT;
         selectorView.showAvailableModules(modules);
     }
 
-    public void moduleSelected(ModuleInfo module) {
+    public void moduleSelected(ProkModule module) {
         logger.debug("Module Selected " + module.type);
 
         if(editorView == null) {

@@ -1,12 +1,13 @@
 package com.korisnamedia.thonk.ui;
 
 import com.korisnamedia.thonk.ConfigKeys;
-import com.prokmodular.ModuleInfo;
+import com.prokmodular.ProkModule;
 import com.prokmodular.model.Preset;
 import com.prokmodular.model.PresetManager;
 import com.prokmodular.model.ProkModel;
 import controlP5.*;
 import controlP5.Button;
+import org.kohsuke.randname.RandomNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +36,13 @@ public class PresetManagerUI {
     private int x  = 0;
     private int y = 0;
 
+    private RandomNameGenerator nameGenerator;
+
     public PresetManagerUI(ControlP5 cp5, ModuleEditorView view) {
         this.cp5 = cp5;
         app = view;
+
+        nameGenerator = new RandomNameGenerator();
 
         prokDir = app.getDataDirectory();
         presetManager = new PresetManager();
@@ -48,7 +53,7 @@ public class PresetManagerUI {
 
     }
 
-    public void setModule(ModuleInfo module) {
+    public void setModule(ProkModule module) {
         patchFolder = getModelDirectory(module);
 
         model = module.model;
@@ -61,7 +66,7 @@ public class PresetManagerUI {
         }
     }
 
-    public File getModelDirectory(ModuleInfo module) {
+    public File getModelDirectory(ProkModule module) {
         File modelDir;
         if(app.getConfig().hasKey(module.getFilename() + ConfigKeys.PRESET_FOLDER)) {
             modelDir = new File(app.getConfig().getString(module.getFilename() + ConfigKeys.PRESET_FOLDER));
@@ -119,7 +124,7 @@ public class PresetManagerUI {
         savePresetButton = cp5.addButton("Save Preset")
                 .setPosition(x + 40, app.getHeight() - 50)
                 .setSize(100, 16)
-                .onRelease(theEvent -> replacePreset());
+                .onRelease(theEvent -> saveNewPreset());
 
         presetNameInput = cp5.addTextfield("Preset Name", x, presetList.getHeight() + 50, 180,20)
                 .setCaptionLabel("");
@@ -143,11 +148,13 @@ public class PresetManagerUI {
         presetManager.savePreset(app.getPreset(), f);
     }
 
-    private void replacePreset() {
+    private void saveNewPreset() {
         logger.debug("Save Preset : " + presetNameInput.getText());
-        if(presetNameInput.getText().length() > 0) {
-            presetManager.savePreset(app.getPreset(), new File(patchFolder, presetNameInput.getText() + ".prk"));
+        String filename = presetNameInput.getText();
+        if(filename.length() == 0) {
+            filename = nameGenerator.next();
         }
+        presetManager.savePreset(app.getPreset(), new File(patchFolder, filename + ".prk"));
         listFiles();
     }
 

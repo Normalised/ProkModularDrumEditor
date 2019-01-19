@@ -2,15 +2,11 @@ package com.korisnamedia.thonk.ui;
 
 import com.korisnamedia.thonk.ConfigKeys;
 import com.korisnamedia.thonk.ThonkModularApp;
-import com.prokmodular.ModuleInfo;
-import com.prokmodular.comms.Commands;
-import com.prokmodular.comms.Serial;
+import com.prokmodular.ProkModule;
 import controlP5.ControlP5;
-import controlP5.ControlWindow;
 import controlP5.Pointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PImage;
 import processing.data.JSONArray;
@@ -37,7 +33,7 @@ public class ModuleSelectorView {
     private int panelHeight = -1;
     private int spacing = 10;
     private int top = 150;
-    private List<ModuleInfo> modules;
+    private List<ProkModule> modules;
     private List<ControlPanel> panels;
 
     private HashMap<String, Integer> panelLayout;
@@ -64,7 +60,7 @@ public class ModuleSelectorView {
         }
     }
 
-    public void showAvailableModules(List<ModuleInfo> modulesToUse) {
+    public void showAvailableModules(List<ProkModule> modulesToUse) {
         logger.debug("Show Available Modules " + modulesToUse.size());
 
         if(app.getConfig().hasKey(ConfigKeys.MODULE_LAYOUT)) {
@@ -78,9 +74,9 @@ public class ModuleSelectorView {
         int index = 0;
         int numModules = modulesToUse.size();
         int displayIndex = 0;
-        for(ModuleInfo info : modulesToUse) {
-            ControlPanel panel = new ControlPanel(cp5, info.type);
-            String moduleKey = info.getConnectionKey();
+        for(ProkModule module : modulesToUse) {
+            ControlPanel panel = new ControlPanel(cp5, module.type);
+            String moduleKey = module.getConnectionKey();
             if(panelLayout.containsKey(moduleKey)) {
                 logger.debug("Layout has panel " + moduleKey + " : " + panelLayout.get(moduleKey));
                 displayIndex = panelLayout.get(moduleKey);
@@ -93,9 +89,9 @@ public class ModuleSelectorView {
             panel.canMoveLeft = displayIndex > 0;
             panel.canMoveRight = displayIndex < numModules - 1;
 
-            panel.setPanelImage(getImageForModule(info.type));
+            panel.setPanelImage(getImageForModule(module.type));
             panel.setVerticalLayout(true);
-            panel.setModule(info);
+            panel.setModule(module);
             panel.setSize(panelWidth, panelHeight + 150);
             panel.onRelease(theEvent -> {
                 Pointer p = panel.getPointer();
@@ -110,11 +106,32 @@ public class ModuleSelectorView {
                     }
                     return;
                 }
-                if(x >= 25 && x <= 55 && y >= 235 && y <= 265) {
-                    logger.debug("Sending trigger to " + info.type);
-                    info.connection.sendCommandWithNoData(Commands.TRIGGER);
+                if(x >= 12 && x <= 48 && y >= 48 && y <= 84 ) {
+                    int qx = (x - 12) / 18;
+                    int qy = (y - 48) / 22;
+                    logger.debug("Q " + qx + ", " + qy);
+                    int q = 0;
+
+                    if(qx == 0) {
+                        q = qy == 0 ? 3 : 0;
+                    } else {
+                        q = qy == 0 ? 2 : 1;
+                    }
+                    module.selectQuad(q);
+                    module.morphX(qx * 1000);
+                    module.morphY((1 - qy) * 1000);
+                    return;
+                }
+                if(y >= 235 && y <= 265) {
+                    if(x >= 25 && x <= 55) {
+                        logger.debug("Sending trigger to " + module.type);
+                        module.trigger();
+                    } else if(x < 22) {
+                        loadBankIntoModule(module);
+                    }
+
                 } else {
-                    app.moduleSelected(info);
+                    app.moduleSelected(module);
                 }
             });
             panels.add(panel);
@@ -122,6 +139,10 @@ public class ModuleSelectorView {
         }
         updateLayout();
         this.modules = modulesToUse;
+    }
+
+    private void loadBankIntoModule(ProkModule info) {
+        logger.debug("Load bank into module " + info.getConnectionKey());
     }
 
     private void movePanelRight(ControlPanel panel) {
