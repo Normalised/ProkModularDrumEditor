@@ -3,6 +3,9 @@ package com.korisnamedia.thonk.ui;
 import com.korisnamedia.thonk.ConfigKeys;
 import com.korisnamedia.thonk.ThonkModularApp;
 import com.prokmodular.ProkModule;
+import com.prokmodular.comms.ParamMessage;
+import com.prokmodular.model.Preset;
+import com.prokmodular.model.PresetManager;
 import controlP5.ControlP5;
 import controlP5.Pointer;
 import org.slf4j.Logger;
@@ -12,6 +15,7 @@ import processing.core.PImage;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +41,9 @@ public class ModuleSelectorView {
     private List<ControlPanel> panels;
 
     private HashMap<String, Integer> panelLayout;
+    private ProkModule bankSelectModule;
+
+    private PresetManager presetManager;
 
     public ModuleSelectorView(PGraphics graphics, ControlP5 cp5, ThonkModularApp thonkModularApp) {
         this.cp5 = cp5;
@@ -49,6 +56,8 @@ public class ModuleSelectorView {
 
         float ratio = (float) panelWidth / (float) bdPanel.width;
         panelHeight = Math.round((ratio * (float)bdPanel.height));
+
+        presetManager = new PresetManager();
 
         panelLayout = new HashMap<>();
 
@@ -93,6 +102,8 @@ public class ModuleSelectorView {
                 logger.debug(p.toString());
                 int x = p.x();
                 int y = p.y();
+
+                // Panel sort arrows
                 if(y <= 20) {
                     if(x < panel.getWidth() / 2 && panel.canMoveLeft) {
                         movePanelLeft(panel);
@@ -101,6 +112,8 @@ public class ModuleSelectorView {
                     }
                     return;
                 }
+
+                // Quad LEDS
                 if(x >= 12 && x <= 48 && y >= 48 && y <= 84 ) {
                     int qx = (x - 12) / 18;
                     int qy = (y - 48) / 22;
@@ -117,6 +130,8 @@ public class ModuleSelectorView {
                     module.morphY((1 - qy) * 1000);
                     return;
                 }
+
+                // Trigger button / SD
                 if(y >= 235 && y <= 265) {
                     if(x >= 25 && x <= 55) {
                         logger.debug("Sending trigger to " + module.type);
@@ -136,8 +151,32 @@ public class ModuleSelectorView {
         this.modules = modulesToUse;
     }
 
-    private void loadBankIntoModule(ProkModule info) {
-        logger.debug("Load bank into module " + info.getConnectionKey());
+    private void loadBankIntoModule(ProkModule module) {
+        logger.debug("Load bank into module " + module.getConnectionKey());
+        bankSelectModule = module;
+        app.selectFolder("Choose Bank Folder", "bankFolderSelected", null, this);
+    }
+
+    public void bankFolderSelected(File selectedFolder) {
+        logger.debug("Selected folder " + selectedFolder.getAbsolutePath() + " for " + bankSelectModule.getConnectionKey());
+
+        presetManager.setCurrentModel(bankSelectModule.model);
+        List<File> files = presetManager.listFilesFrom(selectedFolder);
+        int numFiles = files.size();
+        if(numFiles > 16) numFiles = 16;
+        int paramIndex = 0;
+        for(int i=0;i<numFiles;i++) {
+            try {
+                Preset p  = presetManager.readPreset(files.get(i));
+                paramIndex = 0;
+                for(Float f : p.params) {
+                    bankSelectModule.setParam(new ParamMessage(paramIndex++, f));
+                }
+                bankSelectModule.saveModel(i);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void movePanelRight(ControlPanel panel) {
