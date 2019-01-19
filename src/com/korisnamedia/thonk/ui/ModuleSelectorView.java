@@ -56,23 +56,18 @@ public class ModuleSelectorView {
 
         panelLayout = new HashMap<>();
 
-        JSONArray layoutConfig = app.getConfig().getJSONArray(ConfigKeys.MODULE_LAYOUT);
+        if(app.getConfig().hasKey(ConfigKeys.MODULE_LAYOUT)) {
+            JSONArray layoutConfig = app.getConfig().getJSONArray(ConfigKeys.MODULE_LAYOUT);
 
-        for(int i=0;i<layoutConfig.size();i++) {
-            String key = layoutConfig.getString(i);
-            panelLayout.put(key, i);
+            for(int i=0;i<layoutConfig.size();i++) {
+                String key = layoutConfig.getString(i);
+                panelLayout.put(key, i);
+            }
         }
     }
 
     public void showAvailableModules(List<ModuleInfo> modulesToUse) {
         logger.debug("Show Available Modules " + modulesToUse.size());
-
-        if(app.getConfig().hasKey(ConfigKeys.MODULE_LAYOUT)) {
-            JSONArray layout = app.getConfig().getJSONArray(ConfigKeys.MODULE_LAYOUT);
-            for(int i=0;i<layout.size();i++) {
-                //
-            }
-        }
 
         panels = new ArrayList<>();
         int index = 0;
