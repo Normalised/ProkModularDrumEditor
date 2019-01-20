@@ -122,7 +122,7 @@ public class PresetManagerUI {
         presetList.setItemHeight(20);
 
         savePresetButton = cp5.addButton("Save Preset")
-                .setPosition(x + 40, app.getHeight() - 50)
+                .setPosition(x + 40, app.getHeight() - 90)
                 .setSize(100, 16)
                 .onRelease(theEvent -> saveNewPreset());
 

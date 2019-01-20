@@ -16,10 +16,7 @@ import processing.data.JSONArray;
 import processing.data.JSONObject;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class ModuleSelectorView {
@@ -38,9 +35,9 @@ public class ModuleSelectorView {
     private int spacing = 10;
     private int top = 150;
     private List<ProkModule> modules;
-    private List<ControlPanel> panels;
+    private HashMap<String,ControlPanel> panels;
 
-    private HashMap<String, Integer> panelLayout;
+    private ArrayList<String> panelLayout;
     private ProkModule bankSelectModule;
 
     private PresetManager presetManager;
@@ -59,14 +56,14 @@ public class ModuleSelectorView {
 
         presetManager = new PresetManager();
 
-        panelLayout = new HashMap<>();
+        panelLayout = new ArrayList<>();
 
         if(app.getConfig().hasKey(ConfigKeys.MODULE_LAYOUT)) {
             JSONArray layoutConfig = app.getConfig().getJSONArray(ConfigKeys.MODULE_LAYOUT);
 
             for(int i=0;i<layoutConfig.size();i++) {
                 String key = layoutConfig.getString(i);
-                panelLayout.put(key, i);
+                panelLayout.add(key);
             }
         }
     }
@@ -74,90 +71,56 @@ public class ModuleSelectorView {
     public void showAvailableModules(List<ProkModule> modulesToUse) {
         logger.debug("Show Available Modules " + modulesToUse.size());
 
-        panels = new ArrayList<>();
-        int index = 0;
-        int numModules = modulesToUse.size();
-        int displayIndex = 0;
+        panels = new HashMap<>();
+        modules = modulesToUse;
+
         for(ProkModule module : modulesToUse) {
-            ControlPanel panel = new ControlPanel(cp5, module.type);
-            String moduleKey = module.getConnectionKey();
-            if(panelLayout.containsKey(moduleKey)) {
-                logger.debug("Layout has panel " + moduleKey + " : " + panelLayout.get(moduleKey));
-                displayIndex = panelLayout.get(moduleKey);
-            } else {
-                logger.debug("No layout for " + moduleKey);
-                panelLayout.put(moduleKey, index);
-                displayIndex = index;
-            }
-
-            panel.canMoveLeft = displayIndex > 0;
-            panel.canMoveRight = displayIndex < numModules - 1;
-
-            panel.setPanelImage(getImageForModule(module.type));
-            panel.setVerticalLayout(true);
-            panel.setModule(module);
-            panel.setSize(panelWidth, panelHeight + 150);
-            panel.onRelease(theEvent -> {
-                Pointer p = panel.getPointer();
-                logger.debug(p.toString());
-                int x = p.x();
-                int y = p.y();
-
-                // Panel sort arrows
-                if(y <= 20) {
-                    if(x < panel.getWidth() / 2 && panel.canMoveLeft) {
-                        movePanelLeft(panel);
-                    } else if(x > panel.getWidth() / 2 && panel.canMoveRight) {
-                        movePanelRight(panel);
-                    }
-                    return;
-                }
-
-                // Quad LEDS
-                if(x >= 12 && x <= 48 && y >= 48 && y <= 84 ) {
-                    int qx = (x - 12) / 18;
-                    int qy = (y - 48) / 22;
-                    logger.debug("Q " + qx + ", " + qy);
-                    int q = 0;
-
-                    if(qx == 0) {
-                        q = qy == 0 ? 3 : 0;
-                    } else {
-                        q = qy == 0 ? 2 : 1;
-                    }
-                    module.selectQuad(q);
-                    module.morphX(qx * 1000);
-                    module.morphY((1 - qy) * 1000);
-                    return;
-                }
-
-                // Trigger button / SD
-                if(y >= 235 && y <= 265) {
-                    if(x >= 25 && x <= 55) {
-                        logger.debug("Sending trigger to " + module.type);
-                        module.trigger();
-                    } else if(x < 22) {
-                        loadBankIntoModule(module);
-                    }
-
-                } else {
-                    app.moduleSelected(module);
-                }
-            });
-            panels.add(panel);
-            index++;
+            ControlPanel panel = createPanelForModule(module);
+            panels.put(module.getConnectionKey(), panel);
         }
         updateLayout();
-        this.modules = modulesToUse;
+    }
+
+    private ControlPanel createPanelForModule(ProkModule module) {
+        ControlPanel panel = new ControlPanel(cp5, module.type);
+
+        panel.setPanelImage(getImageForModule(module.type));
+        panel.setVerticalLayout(true);
+        panel.setModule(module);
+        panel.setSize(panelWidth, panelHeight + 150);
+        panel.onSDClicked(theEvent -> loadBankIntoModule(module));
+        panel.onMoveLeftClicked(theEvent -> movePanelLeft(panel));
+        panel.onMoveRightClicked(theEvent -> movePanelRight(panel));
+        panel.onPanelClicked(theEvent -> app.moduleSelected(module));
+        panel.onTriggerClicked(theEvent -> module.trigger());
+        return panel;
     }
 
     private void loadBankIntoModule(ProkModule module) {
         logger.debug("Load bank into module " + module.getConnectionKey());
         bankSelectModule = module;
-        app.selectFolder("Choose Bank Folder", "bankFolderSelected", null, this);
+
+        File bankFolder = null;
+
+        if(app.getConfig().hasKey(ConfigKeys.BANK_FOLDER)) {
+            JSONObject bankFolderConfig = app.getConfig().getJSONObject(ConfigKeys.BANK_FOLDER);
+            if(bankFolderConfig.hasKey(module.getConnectionKey())) {
+                bankFolder = new File(bankFolderConfig.getString(module.getConnectionKey()));
+                if(!bankFolder.exists()) {
+                    bankFolder = null;
+                } else {
+                    logger.debug("Got path from config " + bankFolder.getAbsolutePath());
+                }
+            }
+        } else {
+            app.getConfig().setJSONObject(ConfigKeys.BANK_FOLDER, new JSONObject());
+        }
+        app.selectFolder("Choose Bank Folder", "bankFolderSelected", bankFolder, this);
     }
 
     public void bankFolderSelected(File selectedFolder) {
+        if(selectedFolder == null) return;
+
         logger.debug("Selected folder " + selectedFolder.getAbsolutePath() + " for " + bankSelectModule.getConnectionKey());
 
         presetManager.setCurrentModel(bankSelectModule.model);
@@ -172,28 +135,24 @@ public class ModuleSelectorView {
                 for(Float f : p.params) {
                     bankSelectModule.setParam(new ParamMessage(paramIndex++, f));
                 }
+                logger.debug("Saving " + files.get(i).getName() + " into " + i);
+
                 bankSelectModule.saveModel(i);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+        JSONObject bankFolderConfig = app.getConfig().getJSONObject(ConfigKeys.BANK_FOLDER);
+        bankFolderConfig.setString(bankSelectModule.getConnectionKey(), selectedFolder.getAbsolutePath());
     }
 
     private void movePanelRight(ControlPanel panel) {
         logger.debug("Move Panel Right " + panel.getModule().type);
 
         String thisPanelKey = panel.getModule().getConnectionKey();
-        int thisPanelIndex = panelLayout.get(thisPanelKey);
-
-        for(ControlPanel p : panels) {
-            String key = p.getModule().getConnectionKey();
-            int displayIndex = panelLayout.get(key);
-            if(displayIndex == thisPanelIndex + 1) {
-                panelLayout.put(key, thisPanelIndex);
-                break;
-            }
-        }
-        panelLayout.put(thisPanelKey, thisPanelIndex + 1);
+        int thisPanelIndex = panelLayout.indexOf(thisPanelKey);
+        int nextPanelIndex = thisPanelIndex + 1;
+        Collections.swap(panelLayout, thisPanelIndex, nextPanelIndex);
         updateLayout();
     }
 
@@ -201,29 +160,42 @@ public class ModuleSelectorView {
         logger.debug("Move Panel Left " + panel.getModule().type);
 
         String thisPanelKey = panel.getModule().getConnectionKey();
-        int thisPanelIndex = panelLayout.get(thisPanelKey);
-
-        for(ControlPanel p : panels) {
-            String key = p.getModule().getConnectionKey();
-            int displayIndex = panelLayout.get(key);
-            if(displayIndex == thisPanelIndex - 1) {
-                panelLayout.put(key, thisPanelIndex);
-                break;
-            }
-        }
-        panelLayout.put(thisPanelKey, thisPanelIndex - 1);
+        int thisPanelIndex = panelLayout.indexOf(thisPanelKey);
+        int prevPanelIndex = thisPanelIndex - 1;
+        Collections.swap(panelLayout, thisPanelIndex, prevPanelIndex);
         updateLayout();
     }
 
     private void updateLayout() {
         logger.debug("Update Layout");
         int numPanels = panels.size();
+
+        boolean clearLayout = false;
+        // New or removed modules?
+        if(panelLayout.size() > 0 && modules.size() != panelLayout.size()) {
+            clearLayout = true;
+        }
+
+        for(ProkModule module : modules) {
+            if(panelLayout.indexOf(module.getConnectionKey()) == -1) clearLayout = true;
+        }
+
+        if(clearLayout) {
+            logger.debug("Clearing layout");
+            panelLayout.clear();
+            for(ProkModule module : modules) {
+                panelLayout.add(module.getConnectionKey());
+            }
+        }
+
         int width = app.getWidth();
         int totalWidth = (numPanels * panelWidth) + ((numPanels - 1) * spacing);
         int leftBorder = (width - totalWidth) / 2;
 
-        for(ControlPanel p : panels) {
-            int displayIndex = panelLayout.get(p.getModule().getConnectionKey());
+        int displayIndex = 0;
+        for(Map.Entry<String, ControlPanel> entry : panels.entrySet()) {
+            ControlPanel p = entry.getValue();
+            displayIndex = panelLayout.indexOf(p.getModule().getConnectionKey());
             p.setPosition(leftBorder + ((panelWidth + spacing) * displayIndex), top);
             p.canMoveRight = displayIndex < numPanels - 1;
             p.canMoveLeft = displayIndex > 0;
@@ -232,8 +204,9 @@ public class ModuleSelectorView {
         JSONObject config = app.getConfig();
 
         JSONArray layoutConfig = new JSONArray();
-        for(Map.Entry<String, Integer> entry : panelLayout.entrySet()) {
-            layoutConfig.setString(entry.getValue(), entry.getKey());
+        int index = 0;
+        for(String key : panelLayout) {
+            layoutConfig.setString(index++, key);
         }
 
         config.setJSONArray(ConfigKeys.MODULE_LAYOUT, layoutConfig);
@@ -259,13 +232,13 @@ public class ModuleSelectorView {
     }
 
     public void hide() {
-        for(ControlPanel panel : panels) {
+        for(ControlPanel panel : panels.values()) {
             panel.hide();
         }
     }
 
     public void show() {
-        for(ControlPanel panel : panels) {
+        for(ControlPanel panel : panels.values()) {
             panel.show();
         }
     }

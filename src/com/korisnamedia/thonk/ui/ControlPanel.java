@@ -2,9 +2,7 @@ package com.korisnamedia.thonk.ui;
 
 import com.prokmodular.ProkModule;
 import com.prokmodular.comms.Messages;
-import controlP5.ControlP5;
-import controlP5.ControlP5Constants;
-import controlP5.Controller;
+import controlP5.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import processing.core.PGraphics;
@@ -25,10 +23,16 @@ public class ControlPanel extends Controller<ControlPanel> {
 
     private HashMap<String, String> nameMap;
 
-    private ProkModule currentModule;
+    private ProkModule module;
     private boolean verticalLayout = false;
     public boolean canMoveLeft = false;
     public boolean canMoveRight = false;
+
+    public static int ACTION_MODULE_SD = 5000;
+    public static int ACTION_LAYOUT_MOVE_LEFT = 5001;
+    public static int ACTION_LAYOUT_MOVE_RIGHT = 5002;
+    public static int ACTION_PANEL_CLICKED = 5003;
+    public static int ACTION_MODULE_TRIGGER = 5004;
 
     PImage panelImage;
 
@@ -48,12 +52,12 @@ public class ControlPanel extends Controller<ControlPanel> {
         setView(controlPanelView);
     }
 
-    public void setModule(ProkModule module) {
-        currentModule = module;
+    public void setModule(ProkModule moduleToUse) {
+        module = moduleToUse;
     }
 
     public ProkModule getModule() {
-        return currentModule;
+        return module;
     }
 
     public void setVerticalLayout(boolean vert) {
@@ -62,6 +66,74 @@ public class ControlPanel extends Controller<ControlPanel> {
 
     public void setPanelImage(PImage imageToUse) {
         panelImage = imageToUse;
+    }
+
+    void onSDClicked(CallbackListener listener) {
+        addListenerFor(ACTION_MODULE_SD, listener);
+    }
+
+    void onMoveLeftClicked(CallbackListener listener) {
+        addListenerFor(ACTION_LAYOUT_MOVE_LEFT, listener);
+    }
+
+    void onMoveRightClicked(CallbackListener listener) {
+        addListenerFor(ACTION_LAYOUT_MOVE_RIGHT, listener);
+    }
+
+    void onPanelClicked(CallbackListener listener) {
+        addListenerFor(ACTION_PANEL_CLICKED, listener);
+    }
+
+    void onTriggerClicked(CallbackListener listener) {
+        addListenerFor(ACTION_MODULE_TRIGGER, listener);
+    }
+
+    @Override
+    protected void onRelease() {
+        Pointer p = getPointer();
+        logger.debug(p.toString());
+        int x = p.x();
+        int y = p.y();
+
+        // Panel sort arrows
+        if(y <= 20) {
+            if(x < getWidth() / 2 && canMoveLeft) {
+                callListener(ACTION_LAYOUT_MOVE_LEFT);
+            } else if(x > getWidth() / 2 && canMoveRight) {
+                callListener(ACTION_LAYOUT_MOVE_RIGHT);
+            }
+            return;
+        }
+
+        // Quad LEDS
+        if(x >= 12 && x <= 48 && y >= 48 && y <= 84 ) {
+            int qx = (x - 12) / 18;
+            int qy = (y - 48) / 22;
+            logger.debug("Q " + qx + ", " + qy);
+            int q = 0;
+
+            if(qx == 0) {
+                q = qy == 0 ? 3 : 0;
+            } else {
+                q = qy == 0 ? 2 : 1;
+            }
+            module.selectQuad(q);
+            module.morphX(qx * 1000);
+            module.morphY((1 - qy) * 1000);
+            return;
+        }
+
+        // Trigger button / SD
+        if(y >= 235 && y <= 265) {
+            if(x >= 25 && x <= 55) {
+                logger.debug("Sending trigger to " + module.type);
+                callListener(ACTION_MODULE_TRIGGER);
+            } else if(x < 22) {
+                callListener(ACTION_MODULE_SD);
+            }
+        } else {
+            callListener(ACTION_PANEL_CLICKED);
+        }
     }
 
     private class ControlPanelView implements controlP5.ControllerView<ControlPanel> {
@@ -87,9 +159,9 @@ public class ControlPanel extends Controller<ControlPanel> {
                 y = textY;
             }
 
-            showNameAndVersion(graphics, nameMap.get(controlPanel.currentModule.type),
-                    controlPanel.currentModule.getVersion(),
-                    controlPanel.currentModule.getFirmwareVersion(), x, y);
+            showNameAndVersion(graphics, nameMap.get(controlPanel.module.type),
+                    controlPanel.module.getVersion(),
+                    controlPanel.module.getFirmwareVersion(), x, y);
 
             if(verticalLayout) {
 
@@ -101,7 +173,7 @@ public class ControlPanel extends Controller<ControlPanel> {
                 y = getHeight() - 20;
             }
 
-            showConnected(graphics, controlPanel.currentModule.isConnected(), x, y);
+            showConnected(graphics, controlPanel.module.isConnected(), x, y);
 
             if(verticalLayout) {
                 x = 0;
@@ -111,7 +183,7 @@ public class ControlPanel extends Controller<ControlPanel> {
                 y = textY;
             }
 
-            showSD(graphics, controlPanel.currentModule.hasSD, x, y);
+            showSD(graphics, controlPanel.module.hasSD, x, y);
 
             if(verticalLayout) {
                 y += 12;
@@ -120,7 +192,7 @@ public class ControlPanel extends Controller<ControlPanel> {
                 y = textY;
             }
 
-            showMemory(graphics, "Mem " + controlPanel.currentModule.getProperty(Messages.AUDIO_MEMORY), x, y);
+            showMemory(graphics, "Mem " + controlPanel.module.getProperty(Messages.AUDIO_MEMORY), x, y);
 
             if(verticalLayout) {
                 y += 12;
@@ -129,7 +201,7 @@ public class ControlPanel extends Controller<ControlPanel> {
                 y = textY;
             }
 
-            showBlocks(graphics, controlPanel.currentModule.getProperty(Messages.BLOCK_SIZE), x, y);
+            showBlocks(graphics, controlPanel.module.getProperty(Messages.BLOCK_SIZE), x, y);
 
             if(verticalLayout) {
                 y += 12;
@@ -138,7 +210,7 @@ public class ControlPanel extends Controller<ControlPanel> {
                 y = textY;
             }
 
-            showCPU(graphics, controlPanel.currentModule.getProperty(Messages.CPU), x, y);
+            showCPU(graphics, controlPanel.module.getProperty(Messages.CPU), x, y);
 
         }
 
