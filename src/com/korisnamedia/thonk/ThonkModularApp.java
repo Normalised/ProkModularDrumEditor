@@ -198,7 +198,12 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
         if(moduleScanner.isCheckingPorts()) {
             int portCount = moduleScanner.getPortCount();
             //logger.debug("Checking ports " + portCount);
-            getGraphics().text("Checking " + portCount + " port" + ((portCount != 1) ? "s" : ""), (getWidth() / 2) - 70, getHeight() - 20);
+            if(portCount == 0) {
+                getGraphics().text("No modules found", (getWidth() / 2) - 70, getHeight() - 20);
+            } else {
+                getGraphics().text("Checking " + portCount + " port" + ((portCount != 1) ? "s" : ""), (getWidth() / 2) - 70, getHeight() - 20);
+            }
+
         }
     }
 
