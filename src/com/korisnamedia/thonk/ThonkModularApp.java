@@ -208,7 +208,7 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
     }
 
     private void drawLogo() {
-        if(appState == AppState.SCANNING) {
+        if(appState == AppState.SCANNING || appState == AppState.NO_MODULES_AVAILABLE) {
             image(logoBig, (width - logoBig.width) / 2, (height - logoBig.height) / 2);
         } else {
             image(logoTiny, (width - logoTiny.width) / 2 , height - 26, 50, 21);

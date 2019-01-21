@@ -45,7 +45,7 @@ public class ModuleEditorView implements ModelParamListener {
     private ProkModule currentModule;
     ArrayList<ParameterMapping> parameters;
     public UIControls ui;
-    private boolean devMode = true;
+    private boolean devMode = false;
     private Button generateHeaderButton;
     private Button saveBankButton;
     private Toggle exclusiveToggle;
@@ -117,7 +117,9 @@ public class ModuleEditorView implements ModelParamListener {
         controlPanel.show();
         morphAndStorage.show();
         presetManagerUI.show();
-        generateHeaderButton.show();
+        if(devMode){
+            generateHeaderButton.show();
+        }
         saveBankButton.show();
         exclusiveToggle.show();
         ignoreCVLabel.show();
@@ -134,7 +136,9 @@ public class ModuleEditorView implements ModelParamListener {
         controlPanel.hide();
         morphAndStorage.hide();
         presetManagerUI.hide();
-        generateHeaderButton.hide();
+        if(devMode) {
+            generateHeaderButton.hide();
+        }
         saveBankButton.hide();
         exclusiveToggle.hide();
         ignoreCVLabel.hide();
