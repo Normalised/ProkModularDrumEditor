@@ -45,7 +45,7 @@ public class ModuleEditorView implements ModelParamListener {
     private ProkModule currentModule;
     ArrayList<ParameterMapping> parameters;
     public UIControls ui;
-    private boolean devMode = true;
+    private boolean devMode = false;
     private Button generateHeaderButton;
     private Button saveBankButton;
     private Toggle exclusiveToggle;
