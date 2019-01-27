@@ -30,6 +30,7 @@ public class ModuleEditorView implements ModelParamListener {
     final Logger logger = getLogger(ModuleEditorView.class);
     public static final int METRONOME_ID = 101;
     private final ThonkModularApp app;
+    private final BankLoader bankLoader;
 
     private float morphX = -1;
     private float morphY = -1;
@@ -48,6 +49,7 @@ public class ModuleEditorView implements ModelParamListener {
     private boolean devMode = false;
     private Button generateHeaderButton;
     private Button saveBankButton;
+    private Button loadBankButton;
     private Toggle exclusiveToggle;
     private Toggle metroToggle;
     private Slider metroSlider;
@@ -57,6 +59,7 @@ public class ModuleEditorView implements ModelParamListener {
 
     public ModuleEditorView(ThonkModularApp thonkModularApp) {
         app = thonkModularApp;
+        bankLoader = new BankLoader(app);
         paramCache = new HashMap<>();
 
         parameters = new ArrayList<>();
@@ -121,6 +124,7 @@ public class ModuleEditorView implements ModelParamListener {
             generateHeaderButton.show();
         }
         saveBankButton.show();
+        loadBankButton.show();
         exclusiveToggle.show();
         ignoreCVLabel.show();
         metroToggle.show();
@@ -140,6 +144,7 @@ public class ModuleEditorView implements ModelParamListener {
             generateHeaderButton.hide();
         }
         saveBankButton.hide();
+        loadBankButton.hide();
         exclusiveToggle.hide();
         ignoreCVLabel.hide();
 
@@ -178,20 +183,21 @@ public class ModuleEditorView implements ModelParamListener {
     private void createToolsButtons() {
         int buttonsX = 220;
 
-        if(devMode) {
-            generateHeaderButton = app.cp5.addButton("Generate Header").setPosition(buttonsX,10).setSize(95,20).onRelease(theEvent -> {
-                generateHeader();
-            });
+        loadBankButton = app.cp5.addButton("Load Bank").setPosition(buttonsX,10).setSize(95,20).onRelease(theEvent -> {
+            bankLoader.load(currentModule);
+        });
 
-            saveBankButton = app.cp5.addButton("Save Bank").setPosition(buttonsX + 105,10).setSize(95,20).onRelease(theEvent -> {
-                saveModelsLocally();
-            });
-        } else {
-            saveBankButton = app.cp5.addButton("Save Bank").setPosition(buttonsX + 55,10).setSize(95,20).onRelease(theEvent -> {
-                saveModelsLocally();
-            });
+        saveBankButton = app.cp5.addButton("Save Bank").setPosition(buttonsX + 105,10).setSize(95,20).onRelease(theEvent -> {
+            saveModelsLocally();
+        });
+
+        if(devMode) {
+//            generateHeaderButton = app.cp5.addButton("Generate Header").setPosition(buttonsX, 10).setSize(95, 20).onRelease(theEvent -> {
+//                generateHeader();
+//            });
 
         }
+
 
         exclusiveToggle = app.cp5.addToggle("Exclusive")
                 .setPosition(300, app.getHeight() - 24)
@@ -203,6 +209,10 @@ public class ModuleEditorView implements ModelParamListener {
                 });
 
         ignoreCVLabel = app.cp5.addTextlabel( "IgnoreCV", "Ignore CV", 322, app.getHeight() - 19);
+    }
+
+    private void loadBank() {
+
     }
 
     private void createMetronomeControls() {

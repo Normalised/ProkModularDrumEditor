@@ -1,7 +1,9 @@
 package com.korisnamedia.thonk.ui;
 
 import com.prokmodular.ProkModule;
+import com.prokmodular.comms.CommandContents;
 import com.prokmodular.comms.Messages;
+import com.prokmodular.comms.ModuleCommandListener;
 import controlP5.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +15,7 @@ import java.util.HashMap;
 import static controlP5.ControlP5.BitFontStandard56;
 import static java.lang.Integer.parseInt;
 
-public class ControlPanel extends Controller<ControlPanel> {
+public class ControlPanel extends Controller<ControlPanel> implements ModuleCommandListener {
     final Logger logger = LoggerFactory.getLogger(ControlPanel.class);
 
     public static final int MORPH_ID = 100;
@@ -33,6 +35,7 @@ public class ControlPanel extends Controller<ControlPanel> {
     public static int ACTION_LAYOUT_MOVE_RIGHT = 5002;
     public static int ACTION_PANEL_CLICKED = 5003;
     public static int ACTION_MODULE_TRIGGER = 5004;
+    public static int ACTION_OPEN_SD = 5005;
 
     PImage panelImage;
 
@@ -53,7 +56,9 @@ public class ControlPanel extends Controller<ControlPanel> {
     }
 
     public void setModule(ProkModule moduleToUse) {
+        if(module != null) module.removeCommandListener(this);
         module = moduleToUse;
+        module.addCommandListener(this);
     }
 
     public ProkModule getModule() {
@@ -88,8 +93,15 @@ public class ControlPanel extends Controller<ControlPanel> {
         addListenerFor(ACTION_MODULE_TRIGGER, listener);
     }
 
+    void onCheckSD(CallbackListener listener) {
+        addListenerFor(ACTION_OPEN_SD, listener);
+    }
+
     @Override
     protected void onRelease() {
+
+        if(!verticalLayout) return;
+
         Pointer p = getPointer();
         logger.debug(p.toString());
         int x = p.x();
@@ -128,11 +140,24 @@ public class ControlPanel extends Controller<ControlPanel> {
             if(x >= 25 && x <= 55) {
                 logger.debug("Sending trigger to " + module.type);
                 callListener(ACTION_MODULE_TRIGGER);
+                return;
             } else if(x < 22) {
                 callListener(ACTION_MODULE_SD);
+                return;
             }
-        } else {
-            callListener(ACTION_PANEL_CLICKED);
+        }
+        if(y >= 430 && y <= 442) {
+            callListener(ACTION_OPEN_SD);
+            return;
+        }
+
+        callListener(ACTION_PANEL_CLICKED);
+    }
+
+    @Override
+    public void onCommand(CommandContents command) {
+        if(command.is(Messages.EEPROM)) {
+            logger.debug("EEPROM : " + command.data);
         }
     }
 
@@ -183,7 +208,7 @@ public class ControlPanel extends Controller<ControlPanel> {
                 y = textY;
             }
 
-            showSD(graphics, controlPanel.module.hasSD, x, y);
+            showSD(graphics, controlPanel.module.hasSD(), x, y);
 
             if(verticalLayout) {
                 y += 12;

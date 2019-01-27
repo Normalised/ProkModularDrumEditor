@@ -38,9 +38,9 @@ public class ModuleSelectorView {
     private HashMap<String,ControlPanel> panels;
 
     private ArrayList<String> panelLayout;
-    private ProkModule bankSelectModule;
 
     private PresetManager presetManager;
+    private BankLoader bankLoader;
 
     public ModuleSelectorView(PGraphics graphics, ControlP5 cp5, ThonkModularApp thonkModularApp) {
         this.cp5 = cp5;
@@ -66,6 +66,7 @@ public class ModuleSelectorView {
                 panelLayout.add(key);
             }
         }
+        bankLoader = new BankLoader(app);
     }
 
     public void showAvailableModules(List<ProkModule> modulesToUse) {
@@ -91,59 +92,22 @@ public class ModuleSelectorView {
         panel.onSDClicked(theEvent -> loadBankIntoModule(module));
         panel.onMoveLeftClicked(theEvent -> movePanelLeft(panel));
         panel.onMoveRightClicked(theEvent -> movePanelRight(panel));
-        panel.onPanelClicked(theEvent -> app.moduleSelected(module));
+        panel.onPanelClicked(theEvent ->  {
+            if(cp5.isControlDown()) {
+                //logger.debug("Reboot");
+                //module.reboot();
+                module.readEeprom(0);
+            } else {
+                app.moduleSelected(module);
+            }
+        });
         panel.onTriggerClicked(theEvent -> module.trigger());
+        panel.onCheckSD(theEvent -> module.quickOpenSD());
         return panel;
     }
 
     private void loadBankIntoModule(ProkModule module) {
-        logger.debug("Load bank into module " + module.getConnectionKey());
-        bankSelectModule = module;
-
-        File bankFolder = null;
-
-        if(app.getConfig().hasKey(ConfigKeys.BANK_FOLDER)) {
-            JSONObject bankFolderConfig = app.getConfig().getJSONObject(ConfigKeys.BANK_FOLDER);
-            if(bankFolderConfig.hasKey(module.getConnectionKey())) {
-                bankFolder = new File(bankFolderConfig.getString(module.getConnectionKey()));
-                if(!bankFolder.exists()) {
-                    bankFolder = null;
-                } else {
-                    logger.debug("Got path from config " + bankFolder.getAbsolutePath());
-                }
-            }
-        } else {
-            app.getConfig().setJSONObject(ConfigKeys.BANK_FOLDER, new JSONObject());
-        }
-        app.selectFolder("Choose Bank Folder", "bankFolderSelected", bankFolder, this);
-    }
-
-    public void bankFolderSelected(File selectedFolder) {
-        if(selectedFolder == null) return;
-
-        logger.debug("Selected folder " + selectedFolder.getAbsolutePath() + " for " + bankSelectModule.getConnectionKey());
-
-        presetManager.setCurrentModel(bankSelectModule.model);
-        List<File> files = presetManager.listFilesFrom(selectedFolder);
-        int numFiles = files.size();
-        if(numFiles > 16) numFiles = 16;
-        int paramIndex = 0;
-        for(int i=0;i<numFiles;i++) {
-            try {
-                Preset p  = presetManager.readPreset(files.get(i));
-                paramIndex = 0;
-                for(Float f : p.params) {
-                    bankSelectModule.setParam(new ParamMessage(paramIndex++, f));
-                }
-                logger.debug("Saving " + files.get(i).getName() + " into " + i);
-
-                bankSelectModule.saveModel(i);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        JSONObject bankFolderConfig = app.getConfig().getJSONObject(ConfigKeys.BANK_FOLDER);
-        bankFolderConfig.setString(bankSelectModule.getConnectionKey(), selectedFolder.getAbsolutePath());
+        bankLoader.load(module);
     }
 
     private void movePanelRight(ControlPanel panel) {
