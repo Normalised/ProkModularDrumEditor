@@ -1,0 +1,10 @@
+{
+    "platform": "linux64",
+    "jdk": "~/jdk1.8.0_191",
+    "executable": "ProkModularEditor",
+    "classpath": [
+        "ProkModularProcessingApp.jar", "jssc.jar", "log4j-1.2.17.jar", "slf4j-api-1.7.2.jar", "slf4j-log4j12-1.7.2.jar", "core.jar"
+    ],
+    "mainclass": "com.korisnamedia.thonk.ThonkModularApp",
+    "output": "../deploy/mac/ProkModularEditor.app"
+}
