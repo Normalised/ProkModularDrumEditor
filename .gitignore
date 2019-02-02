@@ -1,2 +1,4 @@
 .DS_Store
 deploy/
+build/log4j.properties
+build/prokmodulareditor.log
