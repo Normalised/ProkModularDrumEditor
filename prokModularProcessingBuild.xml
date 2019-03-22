@@ -169,7 +169,7 @@
   </patternset>
   
   <path id="controlp5.module.sourcepath">
-    <dirset dir="${module.controlp5.basedir}/../processing/controlp5">
+    <dirset dir="${module.controlp5.basedir}/../../processing/controlp5">
       <include name="src"/>
     </dirset>
   </path>
