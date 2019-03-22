@@ -189,6 +189,7 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
             getGraphics().text("No Modules Found", (getWidth() / 2) - 50, getHeight() - 20);
         }
 
+
         drawLogo();
     }
 

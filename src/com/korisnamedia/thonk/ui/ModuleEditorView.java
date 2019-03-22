@@ -168,6 +168,8 @@ public class ModuleEditorView implements ModelParamListener {
         if (key == 32) {
             logger.debug("Sending trigger to " + currentModule.type);
             currentModule.trigger();
+        } else if(key == 104) {
+            generateHeader();
         }
     }
 
