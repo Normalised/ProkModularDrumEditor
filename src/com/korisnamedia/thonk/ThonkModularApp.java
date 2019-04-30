@@ -38,8 +38,11 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
     private File configFile;
     private File prokDir;
 
-    public static int width = 1450;
-    public static int height = 800;
+//    public static int width = 1450;
+//    public static int height = 800;
+
+    private int currentWidth;
+    private int currentHeight;
 
     private ModuleScanner moduleScanner;
 
@@ -76,9 +79,16 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
         prepareExitHandler();
         logger.debug("Setup");
         logoBig = loadImage("img/Logo_WhiteOnBlack.png");
+        logoBig.resize(400,0);
         logoTiny = loadImage("img/Logo_WhiteOnBlack_Tiny.png");
 
         surface.setTitle("Prok Modular Control");
+        surface.setResizable(true);
+        surface.setSize(1450, 800);
+        surface.setLocation(0,0);
+
+        currentWidth = getWidth();
+        currentHeight = getHeight();
 
         noStroke();
         cp5 = new ControlP5(this);
@@ -135,7 +145,7 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
     }
 
     public void closeEditor() {
-        editorView.close();
+        editorView.hideUI();
         currentModule = null;
         appState = AppState.MODULE_SELECT;
         selectorView.show();
@@ -186,11 +196,28 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
             line(0, height - 30, width, height - 30);
         } else if(appState == AppState.NO_MODULES_AVAILABLE) {
             getGraphics().fill(ControlP5Constants.WHITE);
-            getGraphics().text("No Modules Found", (getWidth() / 2) - 50, getHeight() - 20);
+            showNoModulesInfo();
         }
 
+        if(getWidth() != currentWidth || getHeight() != currentHeight) {
+            // Window size changed
+            currentWidth = getWidth();
+            currentHeight = getHeight();
+            if(editorView != null) {
+                editorView.resized(currentWidth, currentHeight);
+            }
+            if(selectorView != null) {
+                selectorView.resized(currentWidth, currentHeight);
+            }
 
+        }
         drawLogo();
+    }
+
+    private void showNoModulesInfo() {
+        getGraphics().text("No Modules Found", (getWidth() / 2) - 70, getHeight() - 40);
+        getGraphics().text("Please connect your Prok Modules to the computer via USB", (getWidth() / 2) - 190, getHeight() - 20);
+
     }
 
     private void showSerialStatus() {
@@ -200,7 +227,7 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
             int portCount = moduleScanner.getPortCount();
             //logger.debug("Checking ports " + portCount);
             if(portCount == 0) {
-                getGraphics().text("No modules found", (getWidth() / 2) - 70, getHeight() - 20);
+                showNoModulesInfo();
             } else {
                 getGraphics().text("Checking " + portCount + " port" + ((portCount != 1) ? "s" : ""), (getWidth() / 2) - 70, getHeight() - 20);
             }

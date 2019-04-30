@@ -5,6 +5,7 @@ import com.korisnamedia.thonk.ThonkModularApp;
 import com.prokmodular.ProkModule;
 import com.prokmodular.comms.ParamMessage;
 import com.prokmodular.model.Preset;
+import com.prokmodular.model.PresetFile;
 import com.prokmodular.model.PresetManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,18 +54,18 @@ public class BankLoader {
         logger.debug("Selected folder " + selectedFolder.getAbsolutePath() + " for " + module.getConnectionKey());
 
         presetManager.setCurrentModel(module.model);
-        List<File> files = presetManager.listFilesFrom(selectedFolder);
+        List<PresetFile> files = presetManager.listFilesFrom(selectedFolder);
         int numFiles = files.size();
         if(numFiles > 16) numFiles = 16;
         int paramIndex = 0;
         for(int i=0;i<numFiles;i++) {
             try {
-                Preset p  = presetManager.readPreset(files.get(i));
+                Preset p  = presetManager.readPreset(files.get(i).file);
                 paramIndex = 0;
                 for(Float f : p.params) {
                     module.setParam(new ParamMessage(paramIndex++, f));
                 }
-                logger.debug("Saving " + files.get(i).getName() + " into " + i);
+                logger.debug("Saving " + files.get(i).file.getName() + " into " + i);
 
                 module.saveModel(i);
             } catch (Exception e) {

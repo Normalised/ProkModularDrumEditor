@@ -210,6 +210,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     public Slider addTunableSlider(String name, ParameterMapping mapping) {
 
         Slider slider = addSlider(name, mapping);
+
         tunableControls.put(slider.getId() - 1, slider);
 
         return slider;
@@ -268,10 +269,8 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     public void setCurrentParam(int paramID, float val) {
         Controller c = controls.get(paramID);
-
-        c.setBroadcast(false);
-        c.setValue(val);
-        c.setBroadcast(true);
+        logger.debug("setCurrentParam " + paramID + " -> " + val);
+        c.setValueSelf(val);
     }
 
     public void setControlValue(int index, float value) {
@@ -306,7 +305,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     }
 
     public void addTriModWithEnvelope(String name, int decay) {
-        addTunableSlider(name + " Base Freq", createNone(30, 5000));
+        addTunableSlider(name + " Base Freq", createNone(1, 5000));
         addSlider(name + " Pulse Width", createLinear(0, 100, 0, 1));
         addOsc(name, decay);
     }
@@ -344,7 +343,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     public void addStateVariable(String name, int low, int high) {
         addSlider(name + " Cutoff", createNone(low, high));
-        addSlider(name + " Res", createLinear(70, 500, 0.7f, 5.0f));
+        addSlider(name + " Res", createLinear(70, 200, 0.7f, 2.0f));
     }
 
     public Object addMixerChannel(String name) {

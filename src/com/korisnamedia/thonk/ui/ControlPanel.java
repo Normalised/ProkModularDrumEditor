@@ -41,6 +41,8 @@ public class ControlPanel extends Controller<ControlPanel> implements ModuleComm
 
     public ControlPanel(ControlP5 cp5, String uid) {
         super(cp5, uid);
+        logger.debug("Create ControlPanel");
+
         this.cp5 = cp5;
 
         nameMap = new HashMap<>();
@@ -49,10 +51,11 @@ public class ControlPanel extends Controller<ControlPanel> implements ModuleComm
         nameMap.put("hihat", "HH");
         nameMap.put("clap", "CP");
 
-        logger.debug("Create ControlPanel");
+
 
         controlPanelView = new ControlPanel.ControlPanelView();
         setView(controlPanelView);
+        logger.debug("End Create ControlPanel");
     }
 
     public void setModule(ProkModule moduleToUse) {

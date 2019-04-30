@@ -178,6 +178,19 @@ public class HiHatUIForProcessing implements ModelUI, UIForProcessing {
 
         ui.addMixerChannel("Noise");
 
+        if(version > 6) {
+            ui.addSpace();
+
+            ui.addSlider("Flange Offset", createLinear(0, 100, 0, 1));
+            ui.addSlider("Flange Depth", createLinear(0, 100, 0, 1));
+            ui.addSlider("Flange Rate", createLinear(0, 100, 0, 5));
+            ui.addSlider("Flange Feedback", createLinear(0, 100, 0, 32767));
+            ui.addSlider("Flange Mix", createLinear(0, 100, 0, 1));
+        }
+
+        if(version > 7) {
+            ui.addStateVariable("Flange Filter", 100,12000);
+        }
         ui.addSpace();
         ui.addMixerChannel("Main Output");
 

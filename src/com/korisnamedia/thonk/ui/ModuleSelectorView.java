@@ -83,6 +83,9 @@ public class ModuleSelectorView {
     }
 
     private ControlPanel createPanelForModule(ProkModule module) {
+
+        logger.debug("Create Panel for Module " + module.type);
+
         ControlPanel panel = new ControlPanel(cp5, module.type);
 
         panel.setPanelImage(getImageForModule(module.type));
@@ -156,7 +159,7 @@ public class ModuleSelectorView {
         int totalWidth = (numPanels * panelWidth) + ((numPanels - 1) * spacing);
         int leftBorder = (width - totalWidth) / 2;
 
-        int displayIndex = 0;
+        int displayIndex;
         for(Map.Entry<String, ControlPanel> entry : panels.entrySet()) {
             ControlPanel p = entry.getValue();
             displayIndex = panelLayout.indexOf(p.getModule().getConnectionKey());
@@ -174,6 +177,7 @@ public class ModuleSelectorView {
         }
 
         config.setJSONArray(ConfigKeys.MODULE_LAYOUT, layoutConfig);
+        logger.debug("End Update Layout");
     }
 
     public void draw() {
@@ -205,5 +209,20 @@ public class ModuleSelectorView {
         for(ControlPanel panel : panels.values()) {
             panel.show();
         }
+    }
+
+    public void resized(int currentWidth, int currentHeight) {
+        int numPanels = panels.size();
+        int width = currentWidth;
+        int totalWidth = (numPanels * panelWidth) + ((numPanels - 1) * spacing);
+        int leftBorder = (width - totalWidth) / 2;
+
+        int displayIndex;
+        for(Map.Entry<String, ControlPanel> entry : panels.entrySet()) {
+            ControlPanel p = entry.getValue();
+            displayIndex = panelLayout.indexOf(p.getModule().getConnectionKey());
+            p.setPosition(leftBorder + ((panelWidth + spacing) * displayIndex), top);
+        }
+
     }
 }

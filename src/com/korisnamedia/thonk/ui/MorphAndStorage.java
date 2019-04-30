@@ -177,6 +177,7 @@ public class MorphAndStorage implements ModuleCommandListener {
                     app.getCurrentParams();
                 });
 
+        morphControl.setGrid(2,2);
     }
 
     @Override
@@ -196,6 +197,15 @@ public class MorphAndStorage implements ModuleCommandListener {
         int bankIndex = Integer.parseInt(quadIndex);
         for (int i = 0; i < 4; i++) {
             quads.get(i).setSelected(i == bankIndex);
+        }
+        if(bankIndex < 4) {
+            morphControl.setGrid(0,0);
+        } else if(bankIndex == 4) {
+            morphControl.setGrid(7,2);
+        } else if(bankIndex == 5) {
+            morphControl.setGrid(2,7);
+        } else if(bankIndex == 6) {
+            morphControl.setGrid(3,3);
         }
     }
 

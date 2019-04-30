@@ -25,7 +25,7 @@ import static com.prokmodular.comms.Commands.*;
 import static com.prokmodular.comms.Commands.MORPH_Y;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class ModuleEditorView implements ModelParamListener {
+public class ModuleEditorView implements ModelParamListener, ModuleCommandListener {
 
     final Logger logger = getLogger(ModuleEditorView.class);
     public static final int METRONOME_ID = 101;
@@ -47,17 +47,23 @@ public class ModuleEditorView implements ModelParamListener {
     ArrayList<ParameterMapping> parameters;
     public UIControls ui;
     private boolean devMode = false;
-    private Button generateHeaderButton;
     private Button saveBankButton;
     private Button loadBankButton;
     private Toggle exclusiveToggle;
     private Toggle metroToggle;
+    private Toggle alwaysCheckSD;
+
     private Slider metroSlider;
     private Textlabel ignoreCVLabel;
+    private Textlabel alwaysCheckSDLabel;
+
 
     private boolean settingUpModule = false;
 
     public ModuleEditorView(ThonkModularApp thonkModularApp) {
+
+        logger.debug("Create Module Editor View");
+
         app = thonkModularApp;
         bankLoader = new BankLoader(app);
         paramCache = new HashMap<>();
@@ -85,6 +91,8 @@ public class ModuleEditorView implements ModelParamListener {
 
         createToolsButtons();
         createMetronomeControls();
+
+        logger.debug("End Create Module Editor View");
     }
 
     public void edit(ProkModule module) {
@@ -95,10 +103,11 @@ public class ModuleEditorView implements ModelParamListener {
 
         if(currentModule != null) {
             currentModule.removeParamListener(this);
+            currentModule.removeCommandListener(this);
         }
         currentModule = module;
         currentModule.addParamListener(this);
-
+        currentModule.addCommandListener(this);
         ui.setModule(module);
 
         metronome.setModule(currentModule);
@@ -117,41 +126,42 @@ public class ModuleEditorView implements ModelParamListener {
             paramCache.clear();
         }
 
-        controlPanel.show();
-        morphAndStorage.show();
-        presetManagerUI.show();
-        if(devMode){
-            generateHeaderButton.show();
-        }
-        saveBankButton.show();
-        loadBankButton.show();
-        exclusiveToggle.show();
-        ignoreCVLabel.show();
-        metroToggle.show();
-        metroSlider.show();
-        ui.show();
+        showUI();
 
         getCurrentParams();
+        currentModule.getCurrentConfig();
         settingUpModule = false;
     }
 
-    public void close() {
+    private void showUI() {
+        controlPanel.show();
+        morphAndStorage.show();
+        presetManagerUI.show();
+        saveBankButton.show();
+        loadBankButton.show();
+        exclusiveToggle.show();
+        alwaysCheckSD.show();
+        ignoreCVLabel.show();
+        alwaysCheckSDLabel.show();
+        metroToggle.show();
+        metroSlider.show();
+        ui.show();
+    }
+
+    public void hideUI() {
         //metronome.stop();
         controlPanel.hide();
         morphAndStorage.hide();
         presetManagerUI.hide();
-        if(devMode) {
-            generateHeaderButton.hide();
-        }
         saveBankButton.hide();
         loadBankButton.hide();
         exclusiveToggle.hide();
         ignoreCVLabel.hide();
-
+        alwaysCheckSD.hide();
+        alwaysCheckSDLabel.hide();
         metroToggle.hide();
         metroSlider.hide();
         metroToggle.setValue(false);
-        //metronome.on(false);
         ui.hide();
         ui.clear();
     }
@@ -193,24 +203,31 @@ public class ModuleEditorView implements ModelParamListener {
             saveModelsLocally();
         });
 
-        if(devMode) {
-//            generateHeaderButton = app.cp5.addButton("Generate Header").setPosition(buttonsX, 10).setSize(95, 20).onRelease(theEvent -> {
-//                generateHeader();
-//            });
-
-        }
-
-
+        int exclusiveX = 250;
         exclusiveToggle = app.cp5.addToggle("Exclusive")
-                .setPosition(300, app.getHeight() - 24)
+                .setPosition(exclusiveX, app.getHeight() - 24)
                 .setSize(20,20)
                 .setValue(false)
                 .onChange(theEvent -> {
                     boolean on = theEvent.getController().getValue() > 0;
                     setExclusive(on);
                 });
+        ignoreCVLabel = app.cp5.addTextlabel( "IgnoreCV", "Ignore CV", exclusiveX + 22, app.getHeight() - 19);
 
-        ignoreCVLabel = app.cp5.addTextlabel( "IgnoreCV", "Ignore CV", 322, app.getHeight() - 19);
+        int alwaysX = 400;
+        alwaysCheckSD = app.cp5.addToggle("SD")
+                .setPosition(alwaysX,app.getHeight() - 24)
+                .setSize(20,20)
+                .setValue(false)
+                .setLabel("")
+                .onChange(theEvent -> {
+                    boolean on = theEvent.getController().getValue() > 0;
+                    logger.debug("Alwqays check SD toggle");
+                    setAlwaysCheckSD(on);
+                });
+
+        alwaysCheckSDLabel = app.cp5.addTextlabel("AlwaysCheckSDLabel","Always Check SD", alwaysX + 22,app.getHeight() - 19);
+
     }
 
     private void loadBank() {
@@ -249,7 +266,7 @@ public class ModuleEditorView implements ModelParamListener {
     }
 
     public void saveModelsLocally() {
-        app.selectFolder("Choose a folder", "folderChosen");
+        app.selectFolder("Choose a folder", "folderChosen", getDataDirectory(), this);
         //modelExporter.saveLocally(currentModel);
     }
 
@@ -273,8 +290,13 @@ public class ModuleEditorView implements ModelParamListener {
         currentModule.clearQuad(index);
     }
 
+
     public void setExclusive(boolean on) {
         currentModule.ignoreCV(on);
+    }
+
+    private void setAlwaysCheckSD(boolean on) {
+        currentModule.alwaysCheckSD(on);
     }
 
     public Preset getPreset() {
@@ -328,9 +350,9 @@ public class ModuleEditorView implements ModelParamListener {
     }
 
     public void applyPreset(Preset p) {
-        logger.debug("Apply preset " + p.config.hello + ". Version " + p.config.version + " with " + p.params.size() + " params");
+        logger.debug("Apply preset " + p.config.getName() + ". Version " + p.config.getVersion() + " with " + p.params.size() + " params");
 
-        if(p.config.version > currentModule.getVersion()) {
+        if(p.config.getVersion() > currentModule.getVersion()) {
             logger.debug("Preset version is newer than firmware");
             return;
         }
@@ -354,5 +376,17 @@ public class ModuleEditorView implements ModelParamListener {
 
     public JSONObject getConfig() {
         return app.getConfig();
+    }
+
+    public void resized(int currentWidth, int currentHeight) {
+
+    }
+
+    @Override
+    public void onCommand(CommandContents command) {
+        if(command.is(Commands.ALWAYS_CHECK_SD)) {
+            logger.debug("Always Check SD " + command.data);
+            alwaysCheckSD.setValueSelf(command.data.equalsIgnoreCase("1") ? 1 : 0);
+        }
     }
 }
