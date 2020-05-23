@@ -5,7 +5,8 @@ import com.prokmodular.ProkModule;
 import com.prokmodular.comms.*;
 import com.prokmodular.drums.*;
 import com.prokmodular.model.*;
-import controlP5.*;
+import controlP5.ControlP5;
+import controlP5.ControlP5Constants;
 import org.slf4j.Logger;
 import processing.core.PApplet;
 import processing.core.PImage;
@@ -68,6 +69,7 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
         addModel(new ClapModel(), new ClapUI());
         addModel(new KickModel(), new KickUI());
         addModel(new HiHatModel(), new HiHatUIForProcessing());
+        addModel(new KlonkModel(), new KlonkUI());
 
         size(width, height);
 

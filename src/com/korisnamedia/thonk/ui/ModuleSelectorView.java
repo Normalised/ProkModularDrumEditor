@@ -3,11 +3,8 @@ package com.korisnamedia.thonk.ui;
 import com.korisnamedia.thonk.ConfigKeys;
 import com.korisnamedia.thonk.ThonkModularApp;
 import com.prokmodular.ProkModule;
-import com.prokmodular.comms.ParamMessage;
-import com.prokmodular.model.Preset;
 import com.prokmodular.model.PresetManager;
 import controlP5.ControlP5;
-import controlP5.Pointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import processing.core.PGraphics;
@@ -15,9 +12,7 @@ import processing.core.PImage;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
 
-import java.io.File;
 import java.util.*;
-
 
 public class ModuleSelectorView {
     final Logger logger = LoggerFactory.getLogger(ModuleSelectorView.class);
@@ -29,6 +24,7 @@ public class ModuleSelectorView {
     private PImage snPanel;
     private PImage cpPanel;
     private PImage hhPanel;
+    private PImage klPanel;
 
     private int panelWidth = 60;
     private int panelHeight = -1;
@@ -50,6 +46,7 @@ public class ModuleSelectorView {
         snPanel = app.loadImage("img/Prok_Drums_SN.jpg");
         cpPanel = app.loadImage("img/Prok_Drums_CP.jpg");
         hhPanel = app.loadImage("img/Prok_Drums_HH.jpg");
+        klPanel = app.loadImage("img/Prok_Drums_KL.jpg");
 
         float ratio = (float) panelWidth / (float) bdPanel.width;
         panelHeight = Math.round((ratio * (float)bdPanel.height));
@@ -86,7 +83,12 @@ public class ModuleSelectorView {
 
         logger.debug("Create Panel for Module " + module.type);
 
-        ControlPanel panel = new ControlPanel(cp5, module.type);
+        String name = module.type;
+
+        while(cp5.get(name) != null) {
+            name += "_";
+        }
+        ControlPanel panel = new ControlPanel(cp5, name);
 
         panel.setPanelImage(getImageForModule(module.type));
         panel.setVerticalLayout(true);
@@ -194,6 +196,8 @@ public class ModuleSelectorView {
                 return hhPanel;
             case "clap":
                 return cpPanel;
+            case "klonk":
+                return klPanel;
             default:
                 return bdPanel;
         }

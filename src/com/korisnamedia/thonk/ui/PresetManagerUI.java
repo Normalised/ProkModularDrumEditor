@@ -39,7 +39,7 @@ public class PresetManagerUI implements ScrollableList.ListItemRenderer {
     private ProkModel model;
     private Button savePresetButton;
     private Button selectFolderButton;
-    private Button scratchFolderButton;
+    //private Button scratchFolderButton;
 
     private int x  = 0;
     private int y = 0;
@@ -116,15 +116,15 @@ public class PresetManagerUI implements ScrollableList.ListItemRenderer {
     }
 
     public void createUI() {
-        selectFolderButton = cp5.addButton("Select Folder")
+        selectFolderButton = cp5.addButton("Choose Patch Folder")
                 .setPosition(x + 40, y)
                 .setSize(100, 16)
                 .onRelease(theEvent -> selectPatchFolder());
 
-        scratchFolderButton = cp5.addButton("Select Scratch")
-                .setPosition(x + 40, app.getHeight() - 60)
-                .setSize(100, 16)
-                .onRelease(theEvent -> selectScratchFolder());
+//        scratchFolderButton = cp5.addButton("Select Scratch")
+//                .setPosition(x + 40, app.getHeight() - 60)
+//                .setSize(100, 16)
+//                .onRelease(theEvent -> selectScratchFolder());
 
         presetList = cp5.addScrollableList("Preset List", x, y + 30, 180, app.getHeight() - 170);
         ScrollableList.ScrollableListView view = (ScrollableList.ScrollableListView) presetList.getView();
@@ -201,7 +201,7 @@ public class PresetManagerUI implements ScrollableList.ListItemRenderer {
         listFiles();
     }
 
-    private void loadPreset(File presetFile) {
+    public void loadPreset(File presetFile) {
 
         try {
             logger.debug("Loading preset file " + presetFile.getName());
@@ -219,7 +219,7 @@ public class PresetManagerUI implements ScrollableList.ListItemRenderer {
         presetNameInput.hide();
         selectFolderButton.hide();
         savePresetButton.hide();
-        scratchFolderButton.hide();
+//        scratchFolderButton.hide();
     }
 
     public void show() {
@@ -227,7 +227,7 @@ public class PresetManagerUI implements ScrollableList.ListItemRenderer {
         presetNameInput.show();
         selectFolderButton.show();
         savePresetButton.show();
-        scratchFolderButton.show();
+//        scratchFolderButton.show();
     }
 
     public void setPosition(int x, int y) {

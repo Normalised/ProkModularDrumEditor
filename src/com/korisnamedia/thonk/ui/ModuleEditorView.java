@@ -49,14 +49,15 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
     private boolean devMode = false;
     private Button saveBankButton;
     private Button loadBankButton;
+    private Button randomiseButton;
+    private Button resetButton;
+
     private Toggle exclusiveToggle;
     private Toggle metroToggle;
-    private Toggle alwaysCheckSD;
 
     private Slider metroSlider;
     private Textlabel ignoreCVLabel;
     private Textlabel alwaysCheckSDLabel;
-
 
     private boolean settingUpModule = false;
 
@@ -139,10 +140,10 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
         presetManagerUI.show();
         saveBankButton.show();
         loadBankButton.show();
+        randomiseButton.show();
+        resetButton.show();
         exclusiveToggle.show();
-        alwaysCheckSD.show();
         ignoreCVLabel.show();
-        alwaysCheckSDLabel.show();
         metroToggle.show();
         metroSlider.show();
         ui.show();
@@ -155,10 +156,10 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
         presetManagerUI.hide();
         saveBankButton.hide();
         loadBankButton.hide();
+        randomiseButton.hide();
+        resetButton.hide();
         exclusiveToggle.hide();
         ignoreCVLabel.hide();
-        alwaysCheckSD.hide();
-        alwaysCheckSDLabel.hide();
         metroToggle.hide();
         metroSlider.hide();
         metroToggle.setValue(false);
@@ -195,11 +196,14 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
     private void createToolsButtons() {
         int buttonsX = 220;
 
-        loadBankButton = app.cp5.addButton("Load Bank").setPosition(buttonsX,10).setSize(95,20).onRelease(theEvent -> {
-            bankLoader.load(currentModule);
-        });
+        loadBankButton = app.cp5.addButton("Send folder to module")
+            .setPosition(buttonsX,10)
+            .setSize(125,20)
+            .onRelease(theEvent -> {
+                bankLoader.load(currentModule);
+            });
 
-        saveBankButton = app.cp5.addButton("Save Bank").setPosition(buttonsX + 105,10).setSize(95,20).onRelease(theEvent -> {
+        saveBankButton = app.cp5.addButton("Save Bank").setPosition(buttonsX + 135,10).setSize(65,20).onRelease(theEvent -> {
             saveModelsLocally();
         });
 
@@ -214,20 +218,29 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
                 });
         ignoreCVLabel = app.cp5.addTextlabel( "IgnoreCV", "Ignore CV", exclusiveX + 22, app.getHeight() - 19);
 
-        int alwaysX = 400;
-        alwaysCheckSD = app.cp5.addToggle("SD")
-                .setPosition(alwaysX,app.getHeight() - 24)
-                .setSize(20,20)
-                .setValue(false)
-                .setLabel("")
-                .onChange(theEvent -> {
-                    boolean on = theEvent.getController().getValue() > 0;
-                    logger.debug("Alwqays check SD toggle");
-                    setAlwaysCheckSD(on);
+        randomiseButton = app.cp5.addButton("Randomise")
+                .setPosition(400,app.getHeight() - 24)
+                .setSize(125,20)
+                .onRelease(theEvent -> {
+                    float pos = app.mouseX - 400.0f;
+                    ui.randomise(pos / 125.0f);
                 });
 
-        alwaysCheckSDLabel = app.cp5.addTextlabel("AlwaysCheckSDLabel","Always Check SD", alwaysX + 22,app.getHeight() - 19);
+        resetButton = app.cp5.addButton("Reset Patch")
+                .setPosition(550,app.getHeight() - 24)
+                .setSize(125,20)
+                .onRelease(theEvent -> {
+                    float pos = app.mouseX - 400.0f;
+                    resetToDefaultPatch();
 
+                });
+    }
+
+    private void resetToDefaultPatch() {
+        logger.debug("Reset to default patch : " + currentModule.model.getConfig().getName() + " : " + currentModule.getFilename());
+        File patch = new File("data/defaults/" + currentModule.getFilename() + "0.PRK");
+        logger.debug("Patch " + patch.getAbsolutePath());
+        presetManagerUI.loadPreset(patch);
     }
 
     private void loadBank() {
@@ -386,7 +399,7 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
     public void onCommand(CommandContents command) {
         if(command.is(Commands.ALWAYS_CHECK_SD)) {
             logger.debug("Always Check SD " + command.data);
-            alwaysCheckSD.setValueSelf(command.data.equalsIgnoreCase("1") ? 1 : 0);
+//            alwaysCheckSD.setValueSelf(command.data.equalsIgnoreCase("1") ? 1 : 0);
         }
     }
 }

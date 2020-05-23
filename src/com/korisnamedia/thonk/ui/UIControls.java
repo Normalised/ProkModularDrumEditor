@@ -269,7 +269,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     public void setCurrentParam(int paramID, float val) {
         Controller c = controls.get(paramID);
-        logger.debug("setCurrentParam " + paramID + " -> " + val);
+        //logger.debug("setCurrentParam " + paramID + " -> " + val);
         c.setValueSelf(val);
     }
 
@@ -293,6 +293,12 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     public void addSineWithEnvelope(String name) {
         addSineWithEnvelope(name, decayMax);
+    }
+
+    @Override
+    public void addSineRatioWithEnvelope(String name) {
+        addSlider(name + " Ratio", createNone(0.25f, 6.0f));
+        addOsc(name, decayMax);
     }
 
     public void addTriModWithEnvelope(String name) {
@@ -379,6 +385,27 @@ public class UIControls implements ControlListener, ModelUIBuilder {
         setNoteButton.show();
         doubleFreqButton.show();
         halveFreqButton.show();
+    }
+
+    public void randomise(double amount) {
+        logger.debug("Randomise " + amount);
+        boolean ignoreAttack = false;
+        if(cp5.isControlDown()) {
+            ignoreAttack = true;
+            logger.debug("Ignore attack");
+        }
+        for(Controller c : controls) {
+            if(c.getName().equalsIgnoreCase("Main Output")) {
+                continue;
+            }
+            if(ignoreAttack && c.getName().contains("Attack")) {
+                continue;
+            }
+            float val = c.getValue();
+            float range = c.getMax() - c.getMin();
+            float randAmount = (float) (((Math.random() * range) - (range * 0.5)) * amount);
+            c.setValue(val + randAmount);
+        }
     }
 
     public void setPosition(int x, int y) {

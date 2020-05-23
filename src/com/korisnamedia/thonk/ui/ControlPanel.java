@@ -13,7 +13,6 @@ import processing.core.PImage;
 import java.util.HashMap;
 
 import static controlP5.ControlP5.BitFontStandard56;
-import static java.lang.Integer.parseInt;
 
 public class ControlPanel extends Controller<ControlPanel> implements ModuleCommandListener {
     final Logger logger = LoggerFactory.getLogger(ControlPanel.class);
@@ -50,8 +49,7 @@ public class ControlPanel extends Controller<ControlPanel> implements ModuleComm
         nameMap.put("snare", "SD");
         nameMap.put("hihat", "HH");
         nameMap.put("clap", "CP");
-
-
+        nameMap.put("klonk", "kl");
 
         controlPanelView = new ControlPanel.ControlPanelView();
         setView(controlPanelView);
