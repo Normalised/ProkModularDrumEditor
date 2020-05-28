@@ -68,7 +68,7 @@ public class ThonkModularApp extends PApplet implements ModuleScanStatusListener
         addModel(new SnareModel(), new SnareUI());
         addModel(new ClapModel(), new ClapUI());
         addModel(new KickModel(), new KickUI());
-        addModel(new HiHatModel(), new HiHatUIForProcessing());
+        addModel(new HiHatModel(), new HiHatUI());
         addModel(new KlonkModel(), new KlonkUI());
 
         size(width, height);

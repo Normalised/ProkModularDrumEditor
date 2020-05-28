@@ -44,7 +44,7 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
     private Map<Integer, Float> paramCache;
 
     private ProkModule currentModule;
-    ArrayList<ParameterMapping> parameters;
+    Map<Integer, ParameterMapping> parameters;
     public UIControls ui;
     private boolean devMode = false;
     private Button saveBankButton;
@@ -69,7 +69,7 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
         bankLoader = new BankLoader(app);
         paramCache = new HashMap<>();
 
-        parameters = new ArrayList<>();
+        parameters = new HashMap<>();
 
         ui = new UIControls(this, app.cp5);
         ui.setPosition(450,10);
@@ -338,9 +338,12 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
         return parameters.size();
     }
 
-    public void addParameter(ParameterMapping mapping) {
-        //logger.debug("Add Parameter Mapping " + parameters.size());
-        parameters.add(mapping);
+    public void addParameter(ParameterMapping mapping, int id) {
+        if(parameters.containsKey(id)) {
+            logger.warn("Parameters already has a mapping for ID " + id);
+        }
+        parameters.put(id, mapping);
+        logger.debug("Add Parameter Mapping " + id + ". Size is " + parameters.size());
     }
 
     public void setCurrentParam(ParamMessage msg) {
@@ -356,8 +359,15 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
         if(settingUpModule) return;
 
 //        logger.debug("Handle Control Event " + paramID + " : " + val + " : " + parameters.size());
-        if (paramID >= parameters.size()) return;
+        if (!parameters.containsKey(paramID)) {
+            logger.warn("No parameter mapping for ID " + paramID);
+            return;
+        }
         ParameterMapping mapping = parameters.get(paramID);
+        if(mapping == null) {
+            logger.warn("Mapping is null for paramID " + paramID);
+            return;
+        }
         currentModule.setParam(new ParamMessage(paramID, mapping.toModule(val)));
 
     }

@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import static com.korisnamedia.thonk.ui.ControlPanel.MORPH_ID;
 import static com.korisnamedia.thonk.ui.ModuleEditorView.METRONOME_ID;
@@ -24,7 +26,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     private final ModuleEditorView app;
     public ControlP5 cp5;
 
-    private ArrayList<Controller> controls;
+    private Controller[] controls;
     private HashMap<Integer, Slider> tunableControls;
 
     protected int currentColumn = 0;
@@ -47,7 +49,9 @@ public class UIControls implements ControlListener, ModelUIBuilder {
 
     public UIControls(ModuleEditorView view, ControlP5 cp5) {
         layout = new Layout();
-        controls = new ArrayList<>();
+        //controls = new ArrayList<>();
+        controls = new Controller[70];
+        //controls.ensureCapacity(70);
         tunableControls = new HashMap<>();
 
         noteMapper = new NoteMapper();
@@ -67,9 +71,8 @@ public class UIControls implements ControlListener, ModelUIBuilder {
             decayMax = 98000;
         }
         module.ui.createUI(this, module.getFirmwareVersion(), module.getVersion());
-        if(module.ui instanceof UIForProcessing) {
-            ((UIForProcessing) module.ui).createExtraUI(cp5);
-        }
+        logger.debug("Created UI with " + app.parameters.size() + " param mappings");
+        module.ui.createExtraUI(cp5);
     }
 
     public void createNoteControls() {
@@ -143,16 +146,16 @@ public class UIControls implements ControlListener, ModelUIBuilder {
         }
     }
 
-    public Object addSlider(String name, int low, int high) {
-        return addSlider(name, createNone(low, high));
+    public Object addSlider(String name, int low, int high, int id) {
+        return addSlider(name, createNone(low, high), id);
     }
 
-    public Object addIntSlider(String name, int low, int high) {
-        return addIntSlider(name, createNone(low, high));
+    public Object addIntSlider(String name, int low, int high, int id) {
+        return addIntSlider(name, createNone(low, high), id);
     }
 
-    public Object addIntSlider(String name, ParameterMapping mapping) {
-        return addSlider(name, mapping).setNumberOfTickMarks(mapping.getInputRange() + 1).showTickMarks(false);
+    public Object addIntSlider(String name, ParameterMapping mapping, int id) {
+        return addSlider(name, mapping, id).setNumberOfTickMarks(mapping.getInputRange() + 1).showTickMarks(false);
     }
 
     public Slider addLocalSlider(String name, int low, int high, int id) {
@@ -179,17 +182,37 @@ public class UIControls implements ControlListener, ModelUIBuilder {
             .setRange(mapping.inLow, mapping.inHigh)
             .setValue(mapping.inLow + (mapping.getInputRange() / 2));
 
-        controls.add(id, k);
-        app.addParameter(mapping);
+        controls[id] = k;
+        app.addParameter(mapping, id);
 
         currentRow += 3;
 
         return k;
     }
 
-    public Slider addSlider(String name, ParameterMapping mapping) {
+//    public Slider addSlider(String name, ParameterMapping mapping) {
+//
+//        int id = app.getCurrentParamId();
+//
+//        Slider s = cp5.addSlider(name);
+//
+//        s.setId(id + 1)
+//                .setPosition((currentColumn * layout.columnWidth) + layout.leftMargin, (currentRow * layout.rowHeight) + layout.topMargin)
+//                .setSize(200, 20)
+//                .setRange(mapping.inLow, mapping.inHigh)
+//                .setValue(mapping.inLow + (mapping.getInputRange() / 2));
+//
+//        controls.add(id, s);
+//        app.addParameter(mapping);
+//
+//        currentRow++;
+//
+//        return s;
+//    }
 
-        int id = app.getCurrentParamId();
+    public Slider addSlider(String name, ParameterMapping mapping, int id) {
+
+        //int id = app.getCurrentParamId();
 
         Slider s = cp5.addSlider(name);
 
@@ -199,25 +222,25 @@ public class UIControls implements ControlListener, ModelUIBuilder {
                 .setRange(mapping.inLow, mapping.inHigh)
                 .setValue(mapping.inLow + (mapping.getInputRange() / 2));
 
-        controls.add(id, s);
-        app.addParameter(mapping);
+        controls[id] = s;
+        app.addParameter(mapping, id);
 
         currentRow++;
 
         return s;
     }
 
-    public Slider addTunableSlider(String name, ParameterMapping mapping) {
+    public Slider addTunableSlider(String name, ParameterMapping mapping, int id) {
 
-        Slider slider = addSlider(name, mapping);
+        Slider slider = addSlider(name, mapping, id);
 
         tunableControls.put(slider.getId() - 1, slider);
 
         return slider;
     }
 
-    public Object addTunableSlider(String name, int low, int high) {
-        Slider slider = (Slider) addSlider(name, low, high);
+    public Object addTunableSlider(String name, int low, int high, int id) {
+        Slider slider = (Slider) addSlider(name, low, high, id);
         tunableControls.put(slider.getId() - 1, slider);
 
         return slider;
@@ -268,13 +291,13 @@ public class UIControls implements ControlListener, ModelUIBuilder {
     }
 
     public void setCurrentParam(int paramID, float val) {
-        Controller c = controls.get(paramID);
+        Controller c = controls[paramID];
         //logger.debug("setCurrentParam " + paramID + " -> " + val);
         c.setValueSelf(val);
     }
 
     public void setControlValue(int index, float value) {
-        Controller c = controls.get(index);
+        Controller c = controls[index];
         c.setValue(value);
     }
 
@@ -287,88 +310,90 @@ public class UIControls implements ControlListener, ModelUIBuilder {
         currentRow = 0;
     }
 
-    public void addNoiseSampleRate() {
-        addSlider("NoiseSampleRate", createLinear(1, 100, 0.01f, 1));
+    public void addNoiseSampleRate(int id) {
+        addSlider("NoiseSampleRate", createLinear(1, 100, 0.01f, 1), id);
     }
 
-    public void addSineWithEnvelope(String name) {
-        addSineWithEnvelope(name, decayMax);
+    public void addSineWithEnvelope(String name, int id) {
+        addSineWithEnvelope(name, decayMax, id);
     }
 
     @Override
-    public void addSineRatioWithEnvelope(String name) {
-        addSlider(name + " Ratio", createNone(0.25f, 6.0f));
-        addOsc(name, decayMax);
+    public void addSineRatioWithEnvelope(String name, int id) {
+        addSlider(name + " Ratio", createNone(0.25f, 6.0f), id);
+        addOsc(name, decayMax, id+1);
     }
 
-    public void addTriModWithEnvelope(String name) {
-        addTriModWithEnvelope(name, decayMax);
+    public void addTriModWithEnvelope(String name, int id) {
+        addTriModWithEnvelope(name, decayMax, id);
     }
 
-    public void addSineWithEnvelope(String name, int decay) {
-        addTunableSlider(name + " Base Freq", createNone(30, 5000));
-        addOsc(name, decay);
+    public void addSineWithEnvelope(String name, int decay, int id) {
+        addTunableSlider(name + " Base Freq", createNone(30, 5000), id);
+        addOsc(name, decay, id + 1);
     }
 
-    public void addTriModWithEnvelope(String name, int decay) {
-        addTunableSlider(name + " Base Freq", createNone(1, 5000));
-        addSlider(name + " Pulse Width", createLinear(0, 100, 0, 1));
-        addOsc(name, decay);
+    public void addTriModWithEnvelope(String name, int decay, int id) {
+        addTunableSlider(name + " Base Freq", createNone(1, 5000), id);
+        addSlider(name + " Pulse Width", createLinear(0, 100, 0, 1), id + 1);
+        addOsc(name, decay, id + 2);
     }
 
-    private void addOsc(String name, int decay) {
-        addSlider(name + " Freq Attack", createSquared(0, 100, 0, 32000));
-        addSlider(name + " Freq Decay", createSquared(1, 100, 1, decay));
-        addSlider(name + " Freq Amount", createSquared(0, 100, 0, 10000));
-        addSlider(name + " Freq Extend Level", extendLevelMapping());
-        addIntSlider(name + " Freq Extend Factor", createNone(extendFactorMinimum, 64));
+    private void addOsc(String name, int decay, int id) {
+        addSlider(name + " Freq Attack", createSquared(0, 100, 0, 32000), id);
+        addSlider(name + " Freq Decay", createSquared(1, 100, 1, decay), id + 1);
+        addSlider(name + " Freq Amount", createSquared(0, 100, 0, 10000), id + 2);
+        addSlider(name + " Freq Extend Level", extendLevelMapping(), id + 3);
+        addIntSlider(name + " Freq Extend Factor", createNone(extendFactorMinimum, 64), id + 4);
     }
 
     private ParameterMapping extendLevelMapping() {
         return createLinear(0, 100, 0, 32767);
     }
 
-    public void addShortExpEnv(String name) {
-        addSlider(name + " Attack", createSquared(0, 100, 0, 8000));
-        addSlider(name + " Decay", createSquared(0, 100, 1, 12000));
-        addSlider(name + " Extend Level", extendLevelMapping());
-        addIntSlider(name + " Extend Factor", createNone(extendFactorMinimum, 64));
+    public void addShortExpEnv(String name, int id) {
+        addSlider(name + " Attack", createSquared(0, 100, 0, 8000), id);
+        addSlider(name + " Decay", createSquared(0, 100, 1, 12000), id + 1);
+        addSlider(name + " Extend Level", extendLevelMapping(), id + 2);
+        addIntSlider(name + " Extend Factor", createNone(extendFactorMinimum, 64), id + 3);
     }
 
-    public void addADEnvelope(String name) {
-        addSlider(name + " Attack", createSquared(0, 100, 0, 32000));
-        addSlider(name + " Decay", createSquared(0, 100, 1, decayMax));
-        addSlider(name + " Extend Level", extendLevelMapping());
-        addIntSlider(name + " Extend Factor", createNone(extendFactorMinimum, 64));
+    public void addADEnvelope(String name, int id) {
+        addSlider(name + " Attack", createSquared(0, 100, 0, 32000), id);
+        addSlider(name + " Decay", createSquared(0, 100, 1, decayMax), id + 1);
+        addSlider(name + " Extend Level", extendLevelMapping(), id + 2);
+        addIntSlider(name + " Extend Factor", createNone(extendFactorMinimum, 64), id + 3);
     }
 
-    public void addBiquad(String name, int low, int high) {
-        addSlider(name + " Cutoff", createNone(low, high));
-        addSlider(name + " Q", createLinear(1, 100, 0.3f, 6.0f));
+    public void addBiquad(String name, int low, int high, int id) {
+        addSlider(name + " Cutoff", createNone(low, high), id);
+        addSlider(name + " Q", createLinear(1, 100, 0.3f, 6.0f), id + 1);
     }
 
-    public void addStateVariable(String name, int low, int high) {
-        addSlider(name + " Cutoff", createNone(low, high));
-        addSlider(name + " Res", createLinear(70, 200, 0.7f, 2.0f));
+    public void addStateVariable(String name, int low, int high, int id) {
+        addSlider(name + " Cutoff", createNone(low, high), id);
+        addSlider(name + " Res", createLinear(70, 200, 0.7f, 2.0f), id + 1);
     }
 
-    public Object addMixerChannel(String name) {
-        return addSlider(name, createLinear(0, 100, 0, 1));
+    public Object addMixerChannel(String name, int id) {
+        return addSlider(name, createLinear(0, 100, 0, 1), id);
     }
 
     public float getControlValue(int index) {
-        return controls.get(index).getValue();
+        return controls[index].getValue();
     }
 
     public void clear() {
         for(Controller c : controls) {
-            cp5.remove(c.getName());
+            if(c != null) {
+                cp5.remove(c.getName());
+            }
         }
-        controls.clear();
+        Arrays.fill(controls, null);
         currentColumn = 0;
         currentRow = 0;
-        if(module != null && module.ui instanceof UIForProcessing) {
-            ((UIForProcessing) module.ui).removeExtraUI(cp5);
+        if(module != null) {
+            module.ui.removeExtraUI(cp5);
         }
 
     }
@@ -395,6 +420,7 @@ public class UIControls implements ControlListener, ModelUIBuilder {
             logger.debug("Ignore attack");
         }
         for(Controller c : controls) {
+            if(c == null) continue;
             if(c.getName().equalsIgnoreCase("Main Output")) {
                 continue;
             }
