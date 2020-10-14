@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.prokmodular.comms.Commands.*;
-import static com.prokmodular.comms.Commands.MORPH_Y;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class ModuleEditorView implements ModelParamListener, ModuleCommandListener {
@@ -385,7 +383,11 @@ public class ModuleEditorView implements ModelParamListener, ModuleCommandListen
         }
 
         for(int i=0;i<p.params.size();i++) {
+            if(!parameters.containsKey(i)) {
+                logger.error("Parameters map doesn't have a mapping for index " + i);
+            }
             ParameterMapping mapping = parameters.get(i);
+
             ui.setControlValue(i, mapping.fromModule(p.params.get(i)));
         }
     }

@@ -1,0 +1,9 @@
+[submodule "modules/ProkDrumPatchTools"]
+	path = modules/ProkDrumPatchTools
+	url = git@github.com:Normalised/ProkDrumPatchTools.git
+[submodule "modules/ProkModularCore"]
+	path = modules/ProkModularCore
+	url = git@github.com:Normalised/ProkModularCore.git
+[submodule "modules/controlp5"]
+	path = modules/controlp5
+	url = git@github.com:Normalised/controlp5.git

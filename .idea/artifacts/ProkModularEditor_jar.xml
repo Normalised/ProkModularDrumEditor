@@ -1,0 +1,22 @@
+<component name="ArtifactManager">
+  <artifact name="ProkModularEditor:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/ProkModularEditor_jar</output-path>
+    <root id="root">
+      <element id="archive" name="ProkModularEditor.jar">
+        <element id="module-output" name="ProkModularEditor" />
+        <element id="module-output" name="ProkModularCore" />
+        <element id="module-output" name="ProkDrumPatchTools" />
+        <element id="module-output" name="controlp5" />
+        <element id="directory" name="META-INF">
+          <element id="file-copy" path="$PROJECT_DIR$/ProkModularProcessingApp/src/META-INF/MANIFEST.MF" />
+        </element>
+        <element id="directory" name="img">
+          <element id="dir-copy" path="$PROJECT_DIR$/work_dir/img" />
+        </element>
+      </element>
+      <element id="library" level="project" name="slf4j-api-1.7.2" />
+      <element id="library" level="project" name="core" />
+      <element id="library" level="project" name="jssc" />
+    </root>
+  </artifact>
+</component>
