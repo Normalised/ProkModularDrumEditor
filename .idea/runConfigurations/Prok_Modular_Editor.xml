@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Prok Modular Editor" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.korisnamedia.thonk.ThonkModularApp" />
+    <module name="ProkModularEditor" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/work_dir" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
